@@ -1106,7 +1106,7 @@ def simular_cdb():
         dias       = int(entry_dias.get())
         if valor <= 0 or percentual <= 0 or dias <= 0:
             raise ValueError
-        taxa  = 0.105 * (percentual / 100)
+        taxa  = CDI_ANUAL * (percentual / 100)
         final = valor * (1 + taxa) ** (dias / 365)
         lucro = final - valor
         resultado_cdb.config(
@@ -1127,7 +1127,7 @@ def calcular_meta():
         if meta <= 0 or percentual <= 0:
             raise ValueError
 
-        taxa_anual  = 0.105 * (percentual / 100)
+        taxa_anual  = CDI_ANUAL * (percentual / 100)
         taxa_mensal = (1 + taxa_anual) ** (1 / 12) - 1
 
         modo = modo_var.get()  # "aporte" ou "prazo"
@@ -1888,17 +1888,21 @@ def _calcular_beta(serie_ativo, serie_ibov):
 def _calcular_sharpe(serie):
     try:
         ret_d = serie.pct_change().dropna()
+        if len(ret_d) < 2: return None
         ret_a = float(ret_d.mean() * 252)
         vol_a = float(ret_d.std() * (252**0.5))
-        if vol_a == 0: return None
-        return round((ret_a - CDI_ANUAL) / vol_a, 2)
+        if vol_a == 0 or vol_a != vol_a: return None  # vol_a != vol_a detecta NaN
+        resultado = round((ret_a - CDI_ANUAL) / vol_a, 2)
+        return resultado if resultado == resultado else None  # descarta NaN
     except: return None
 
 def _calcular_drawdown_max(serie):
     try:
+        if serie is None or len(serie) < 2: return None
         pico = serie.cummax()
         dd   = (serie - pico) / pico * 100
-        return round(float(dd.min()), 2)
+        resultado = round(float(dd.min()), 2)
+        return resultado if resultado == resultado else None  # descarta NaN
     except: return None
 
 def _buscar_ibov_para_carteira(start, end):
@@ -1976,25 +1980,6 @@ def _grafico_evolucao_com_dados(dados, carteira, frame_pai):
         tk.Label(frame_pai, text=f"Erro no gráfico: {e}", bg="#161616",
                  fg="#FF5252", font=("Arial",8)).pack()
 
-def _montar_tabela_risco(carteira, frame_pai):
-    """Renderiza tabela de indicadores de risco avançados (em thread)."""
-    for w in frame_pai.winfo_children(): w.destroy()
-    if not carteira:
-        tk.Label(frame_pai, text="Adicione ativos para ver indicadores de risco.",
-                 bg="#161616", fg="#cc0000", font=("Arial", 8, "italic"), pady=8).pack()
-        return
-    tk.Label(frame_pai, text="⏳ Calculando Beta, Sharpe e Drawdown...",
-             bg="#161616", fg=ACCENT, font=("Arial", 8), pady=6).pack()
-    def _calc():
-        try:
-            ind = _calcular_indicadores_avancados_carteira(carteira, {})
-            root.after(0, lambda: _renderizar_tabela_risco(ind, frame_pai))
-        except Exception as e:
-            root.after(0, lambda: [w.destroy() for w in frame_pai.winfo_children()] or
-                       tk.Label(frame_pai, text=f"Erro ao calcular indicadores.",
-                                bg="#161616", fg="#FF5252", font=("Arial",8)).pack())
-    threading.Thread(target=_calc, daemon=True).start()
-
 def _renderizar_tabela_risco(indicadores, frame_pai):
     for w in frame_pai.winfo_children(): w.destroy()
     if not indicadores:
@@ -2031,36 +2016,6 @@ def _renderizar_tabela_risco(indicadores, frame_pai):
              bg="#161616", fg="#cc0000", font=("Arial", 7), anchor="w").pack(fill="x")
 
 # ── 7. Comparativo com Benchmarks ──
-def _montar_grafico_benchmark(carteira, frame_pai):
-    """Gráfico em Base 100 comparando carteira vs Ibovespa vs CDI."""
-    for w in frame_pai.winfo_children(): w.destroy()
-    if not carteira:
-        tk.Label(frame_pai, text="Adicione ações para ver a comparação com benchmarks.",
-                 bg="#161616", fg="#cc0000", font=("Arial", 8, "italic"), pady=8).pack()
-        return
-    tk.Label(frame_pai, text="⏳ Buscando dados do Ibovespa e CDI...",
-             bg="#161616", fg=ACCENT, font=("Arial",8), pady=6).pack()
-    def _buscar():
-        try:
-            datas = []
-            for pos in carteira.values():
-                try: datas.append(datetime.strptime(pos["data_compra"],"%d/%m/%Y"))
-                except: pass
-            if not datas: return
-            start   = min(datas).strftime("%Y-%m-%d")
-            end     = datetime.now().strftime("%Y-%m-%d")
-            tickers = list(carteira.keys())
-            dados   = yf.download(tickers, start=start, end=end,
-                                  auto_adjust=True, progress=False)
-            ibov    = yf.download("^BVSP", start=start, end=end,
-                                  auto_adjust=True, progress=False)
-            root.after(0, lambda: _renderizar_benchmark(dados, ibov, carteira, frame_pai, start, end))
-        except Exception as e:
-            root.after(0, lambda: [w.destroy() for w in frame_pai.winfo_children()] or
-                       tk.Label(frame_pai, text="Erro ao buscar benchmarks.",
-                                bg="#161616", fg="#FF5252", font=("Arial",8)).pack())
-    threading.Thread(target=_buscar, daemon=True).start()
-
 def _renderizar_benchmark(dados, ibov, carteira, frame_pai, start, end):
     import pandas as pd, numpy as np
     for w in frame_pai.winfo_children(): w.destroy()
@@ -2286,78 +2241,6 @@ def _cdi_desde_compra(data_compra_str):
         return ((1 + CDI_ANUAL) ** (dias / 365) - 1) * 100
     except Exception:
         return None
-
-# ── 5. Gráfico evolução da carteira ──
-def _grafico_evolucao_carteira(carteira, frame_pai):
-    """Plota evolução do patrimônio total da carteira desde a data de compra mais antiga."""
-    for w in frame_pai.winfo_children(): w.destroy()
-
-    if not carteira:
-        tk.Label(frame_pai, text="Adicione ativos à carteira para ver a evolução.",
-                 bg="#161616", fg="#cc0000", font=("Arial", 9, "italic"), pady=20).pack()
-        return
-
-    # Descobre data mais antiga
-    datas = []
-    for pos in carteira.values():
-        try:
-            datas.append(datetime.strptime(pos["data_compra"], "%d/%m/%Y"))
-        except Exception:
-            pass
-    if not datas:
-        return
-    start = min(datas).strftime("%Y-%m-%d")
-    end   = datetime.now().strftime("%Y-%m-%d")
-
-    tickers = list(carteira.keys())
-    try:
-        dados = yf.download(tickers, start=start, end=end, auto_adjust=True, progress=False)
-        if dados.empty:
-            return
-    except Exception:
-        return
-
-    fig = plt.figure(figsize=(11, 3.2))
-    fig.patch.set_facecolor("#111111")
-    ax  = fig.add_axes([0.07, 0.18, 0.90, 0.72])
-    ax.set_facecolor("#161616")
-
-    import pandas as pd
-    patrimonio_total = pd.Series(dtype=float)
-
-    for ticker, pos in carteira.items():
-        try:
-            serie = (dados["Close"] if len(tickers)==1
-                     else dados["Close"][ticker]).dropna()
-            qtd   = float(pos["qtd"])
-            val   = serie * qtd
-            patrimonio_total = patrimonio_total.add(val, fill_value=0)
-        except Exception:
-            pass
-
-    if patrimonio_total.empty:
-        return
-
-    ax.fill_between(patrimonio_total.index, patrimonio_total.values,
-                    alpha=0.25, color="#cc0000")
-    ax.plot(patrimonio_total.index, patrimonio_total.values,
-            color="#cc0000", linewidth=2)
-
-    ax.set_title("Evolução do Patrimônio", color=TXT, fontsize=11, fontweight="bold")
-    ax.set_ylabel("R$", color=TXT)
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"R$ {x:,.0f}"))
-
-    import matplotlib.dates as mdates2
-    ax.xaxis.set_major_locator(mdates2.MonthLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates2.DateFormatter("%b/%Y"))
-    ax.tick_params(axis="x", colors="#FFF", rotation=30, labelsize=7)
-    ax.tick_params(axis="y", colors="#FFF")
-    for spine in ax.spines.values(): spine.set_color("#333")
-
-    canvas = FigureCanvasTkAgg(fig, master=frame_pai)
-    canvas.draw()
-    canvas.get_tk_widget().pack(fill="both", expand=True)
-
 
 # ── UI: funções de ação ──
 def _adicionar_posicao():

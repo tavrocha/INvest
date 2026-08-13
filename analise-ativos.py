@@ -220,7 +220,8 @@ try:
     percentual_cdi = float(input("Percentual do CDI (ex: 110 para 110%): "))
     dias = int(input("Período do investimento em dias: "))
 
-    taxa_cdi_anual = 0.105
+    # CDI anual base (100% do CDI) — manter sincronizado com CDI_ANUAL em app_investimentos.py
+    taxa_cdi_anual = 0.1065
     taxa_anual_cdb = taxa_cdi_anual * (percentual_cdi / 100)
 
     valor_final = valor_cdb * (1 + taxa_anual_cdb) ** (dias / 365)
