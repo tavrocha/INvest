@@ -2412,7 +2412,7 @@ def _atualizar_carteira_ui():
 
     def _buscar_tudo():
         resultado = {"precos": {}, "ibov": None, "dados_hist": None,
-                     "indicadores": {}, "erro": None}
+                     "indicadores": {}, "start": None, "end": None, "erro": None}
         try:
             tickers = list(_carteira.keys())
             if not tickers:
@@ -2431,6 +2431,8 @@ def _atualizar_carteira_ui():
             if datas:
                 start = min(datas).strftime("%Y-%m-%d")
                 end   = datetime.now().strftime("%Y-%m-%d")
+                resultado["start"] = start
+                resultado["end"]   = end
                 try:
                     resultado["dados_hist"] = yf.download(
                         tickers, start=start, end=end,
@@ -2466,6 +2468,20 @@ def _atualizar_carteira_ui():
 
     threading.Thread(target=_buscar_tudo, daemon=True).start()
 
+def _renderizar_secoes_vazias():
+    """Placeholder para as 5 seções avançadas quando não há ativos na carteira."""
+    for frame, msg in [
+        (frame_risco,     "Adicione ativos para ver indicadores de risco."),
+        (frame_benchmark, "Adicione ações para ver a comparação com benchmarks."),
+    ]:
+        for w in frame.winfo_children(): w.destroy()
+        tk.Label(frame, text=msg, bg="#161616", fg="#cc0000",
+                 font=("Arial", 8, "italic"), pady=8).pack()
+    _montar_alertas([], frame_alertas)
+    _montar_score_div({}, frame_score_div)
+    _montar_resumo_executivo([], {}, frame_resumo)
+
+
 def _aplicar_resultados(resultado):
     """Chamada na thread principal com todos os dados prontos."""
     btn_atualizar_cart.config(state="normal", text="↻ Atualizar")
@@ -2474,19 +2490,42 @@ def _aplicar_resultados(resultado):
     dados_hist  = resultado["dados_hist"]
     ibov        = resultado["ibov"]
     indicadores = resultado["indicadores"]
+    start       = resultado.get("start")
+    end         = resultado.get("end")
 
     # Renderiza tabela P&L
     _renderizar_carteira(precos)
 
-    rows = _calcular_pl(_carteira, precos)
-    if not rows:
+    if not _carteira:
+        _renderizar_secoes_vazias()
+        lbl_cart_status.config(text="", fg="#aaaaaa")
         return
 
-    # Alertas (síncrono, rápido)
+    rows = _calcular_pl(_carteira, precos)
 
-    # Score diversificação (síncrono, rápido)
+    # Indicadores de risco (Beta / Sharpe / Drawdown) — reaproveita dados já baixados
+    _renderizar_tabela_risco(indicadores, frame_risco)
 
-    # Resumo executivo (síncrono, rápido)
+    # Carteira vs Ibovespa vs CDI — reaproveita dados já baixados, sem novo download
+    if dados_hist is not None and not dados_hist.empty and ibov is not None and start and end:
+        _renderizar_benchmark(dados_hist, ibov, _carteira, frame_benchmark, start, end)
+    else:
+        for w in frame_benchmark.winfo_children(): w.destroy()
+        tk.Label(frame_benchmark, text="Não foi possível carregar os benchmarks.",
+                 bg="#161616", fg="#cc0000", font=("Arial", 8, "italic"), pady=8).pack()
+
+    # Alertas automáticos
+    _montar_alertas(rows, frame_alertas)
+
+    # Score de diversificação
+    _montar_score_div(_carteira, frame_score_div)
+
+    # Resumo executivo
+    _montar_resumo_executivo(rows, _carteira, frame_resumo)
+
+    if not rows:
+        lbl_cart_status.config(text="⚠ Nenhum preço encontrado para os ativos cadastrados.", fg="#e60000")
+        return
 
     # Gráfico evolução
     if dados_hist is not None and not dados_hist.empty:
@@ -2746,6 +2785,49 @@ frame_cdb_cart_tabela.pack(fill="x", padx=4, pady=(0, 10))
 frame_cart_grafico = tk.Frame(frame_cart, bg=CART_BG)
 frame_cart_grafico.pack(fill="x", padx=4, pady=(0,4))
 
+# -- Separador visual entre carteira básica e seções avançadas --
+tk.Frame(frame_cart, bg="#2e2e2e", height=2).pack(fill="x", padx=10, pady=(8,0))
+
+# ── Indicadores de Risco Avançados (Beta / Sharpe / Drawdown) ──
+cab_risco = tk.Frame(frame_cart, bg="#0d0d0d")
+cab_risco.pack(fill="x")
+tk.Label(cab_risco, text="📐  Indicadores de Risco", bg="#0d0d0d", fg="#e60000",
+         font=("Arial", 10, "bold"), pady=5).pack(side="left", padx=12)
+frame_risco = tk.Frame(frame_cart, bg=CART_BG)
+frame_risco.pack(fill="x", padx=4, pady=(4, 4))
+
+# ── Comparativo com Benchmarks (Ibovespa / CDI) ──
+cab_benchmark = tk.Frame(frame_cart, bg="#0d0d0d")
+cab_benchmark.pack(fill="x")
+tk.Label(cab_benchmark, text="📈  Carteira vs Benchmarks", bg="#0d0d0d", fg="#e60000",
+         font=("Arial", 10, "bold"), pady=5).pack(side="left", padx=12)
+frame_benchmark = tk.Frame(frame_cart, bg=CART_BG)
+frame_benchmark.pack(fill="x", padx=4, pady=(4, 4))
+
+# ── Alertas Automáticos ──
+cab_alertas = tk.Frame(frame_cart, bg="#0d0d0d")
+cab_alertas.pack(fill="x")
+tk.Label(cab_alertas, text="🔔  Alertas", bg="#0d0d0d", fg="#e60000",
+         font=("Arial", 10, "bold"), pady=5).pack(side="left", padx=12)
+frame_alertas = tk.Frame(frame_cart, bg=CART_BG)
+frame_alertas.pack(fill="x", padx=4, pady=(4, 4))
+
+# ── Score de Diversificação ──
+cab_score_div = tk.Frame(frame_cart, bg="#0d0d0d")
+cab_score_div.pack(fill="x")
+tk.Label(cab_score_div, text="🧭  Diversificação", bg="#0d0d0d", fg="#e60000",
+         font=("Arial", 10, "bold"), pady=5).pack(side="left", padx=12)
+frame_score_div = tk.Frame(frame_cart, bg=CART_BG)
+frame_score_div.pack(fill="x", padx=4, pady=(4, 4))
+
+# ── Resumo Executivo ──
+cab_resumo = tk.Frame(frame_cart, bg="#0d0d0d")
+cab_resumo.pack(fill="x")
+tk.Label(cab_resumo, text="📝  Resumo Executivo", bg="#0d0d0d", fg="#e60000",
+         font=("Arial", 10, "bold"), pady=5).pack(side="left", padx=12)
+frame_resumo = tk.Frame(frame_cart, bg=CART_BG)
+frame_resumo.pack(fill="x", padx=4, pady=(4, 10))
+
 
 
 # ==============================
@@ -2766,6 +2848,7 @@ try:
         _atualizar_carteira_ui()
     else:
         _renderizar_carteira({})
+        _renderizar_secoes_vazias()
 except Exception:
     pass
 
