@@ -1,0 +1,5 @@
+.env
+historico.db
+carteira.json
+carteira_cdbs.json
+__pycache__/
