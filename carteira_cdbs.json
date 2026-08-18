@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "nome": "Bradesco CDB",
+    "valor": 2000.0,
+    "pct_cdi": 110.0,
+    "data": "01/01/2025",
+    "vencimento": "—"
+  }
+]
