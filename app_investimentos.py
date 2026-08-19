@@ -1,11 +1,10 @@
 # =============================================================================
-# Dashboard de Investimentos — v3.0
+# INvest — v3.0
 # Autor: Vinícius Tavares Rocha
-# Descrição: Dashboard de análise de ações da B3 com IA consultora multi-LLM.
-#            Integra yFinance, Matplotlib, SQLite3 e APIs de Claude, GPT e Gemini.
-# Tecnologias: Python 3.10+, Tkinter, yFinance, Matplotlib, SQLite3, Anthropic,
-#              OpenAI, Google Generative AI
-# GitHub: github.com/seuusuario/dashboard-investimentos
+# Descrição: Dashboard de análise de ações da B3, com carteira pessoal, CDBs,
+#            histórico de patrimônio e Assistente da Carteira local (sem custo).
+# Tecnologias: Python 3.10+, Tkinter, yFinance, Matplotlib, SQLite3
+# GitHub: github.com/tavrocha/INvest
 # =============================================================================
 
 import tkinter as tk
@@ -17,19 +16,9 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.ticker import FuncFormatter
 import os
-import json as _json_mod
+import json
 import sqlite3
-
-# ── Etapa 6: carrega .env e APIs ──
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass  # sem dotenv, usa variáveis de ambiente do sistema
-
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-OPENAI_API_KEY    = os.getenv("OPENAI_API_KEY", "")
-GOOGLE_API_KEY    = os.getenv("GOOGLE_API_KEY", "")
+import unicodedata
 
 # ==============================
 # CONFIGURAÇÃO DE CORES
@@ -48,11 +37,110 @@ CORES_ATIVOS = [
     "#40C4FF", "#B2FF59", "#EA80FC", "#FF80AB", "#CCFF90",
 ]
 
-ATIVOS_PADRAO = [
-    "PETR4.SA", "VALE3.SA", "ITUB4.SA", "BBDC4.SA",
-    "BBAS3.SA", "WEGE3.SA", "SUZB3.SA", "CPFE3.SA",
-    "TAEE11.SA", "PRIO3.SA", "MGLU3.SA",
+# ==============================
+# CATÁLOGO DE ATIVOS — base curada para a busca com autocomplete
+# ==============================
+# Lista fixa/curada (não é dado de mercado — preço, variação e histórico de
+# QUALQUER ativo aqui, ou digitado manualmente, sempre vêm ao vivo do yfinance).
+# "popular": True marca os que aparecem pré-marcados ao abrir o app e em
+# destaque quando a busca está vazia.
+CATALOGO_ATIVOS = [
+    # ── Ações — popular ──
+    {"ticker": "PETR4", "nome": "Petrobras PN",              "tipo": "Ação", "popular": True},
+    {"ticker": "VALE3", "nome": "Vale ON",                    "tipo": "Ação", "popular": True},
+    {"ticker": "ITUB4", "nome": "Itaú Unibanco PN",           "tipo": "Ação", "popular": True},
+    {"ticker": "BBDC4", "nome": "Bradesco PN",                "tipo": "Ação", "popular": True},
+    {"ticker": "BBAS3", "nome": "Banco do Brasil ON",         "tipo": "Ação", "popular": True},
+    {"ticker": "WEGE3", "nome": "WEG ON",                     "tipo": "Ação", "popular": True},
+    {"ticker": "SUZB3", "nome": "Suzano ON",                  "tipo": "Ação", "popular": True},
+    {"ticker": "CPFE3", "nome": "CPFL Energia ON",            "tipo": "Ação", "popular": True},
+    {"ticker": "TAEE11","nome": "Taesa Unit",                 "tipo": "Ação", "popular": True},
+    {"ticker": "PRIO3", "nome": "PRIO ON",                    "tipo": "Ação", "popular": True},
+    {"ticker": "MGLU3", "nome": "Magazine Luiza ON",          "tipo": "Ação", "popular": True},
+    # ── Ações — catálogo geral ──
+    {"ticker": "PETR3", "nome": "Petrobras ON",               "tipo": "Ação", "popular": False},
+    {"ticker": "ITSA4", "nome": "Itaúsa PN",                  "tipo": "Ação", "popular": False},
+    {"ticker": "BBDC3", "nome": "Bradesco ON",                "tipo": "Ação", "popular": False},
+    {"ticker": "ABEV3", "nome": "Ambev ON",                   "tipo": "Ação", "popular": False},
+    {"ticker": "B3SA3", "nome": "B3 ON",                      "tipo": "Ação", "popular": False},
+    {"ticker": "RENT3", "nome": "Localiza ON",                "tipo": "Ação", "popular": False},
+    {"ticker": "LREN3", "nome": "Lojas Renner ON",            "tipo": "Ação", "popular": False},
+    {"ticker": "RADL3", "nome": "Raia Drogasil ON",           "tipo": "Ação", "popular": False},
+    {"ticker": "RDOR3", "nome": "Rede D'Or ON",               "tipo": "Ação", "popular": False},
+    {"ticker": "HAPV3", "nome": "Hapvida ON",                 "tipo": "Ação", "popular": False},
+    {"ticker": "GGBR4", "nome": "Gerdau PN",                  "tipo": "Ação", "popular": False},
+    {"ticker": "CSNA3", "nome": "CSN ON",                     "tipo": "Ação", "popular": False},
+    {"ticker": "USIM5", "nome": "Usiminas PNA",               "tipo": "Ação", "popular": False},
+    {"ticker": "CSAN3", "nome": "Cosan ON",                   "tipo": "Ação", "popular": False},
+    {"ticker": "ELET3", "nome": "Eletrobras ON",              "tipo": "Ação", "popular": False},
+    {"ticker": "ELET6", "nome": "Eletrobras PNB",             "tipo": "Ação", "popular": False},
+    {"ticker": "SBSP3", "nome": "Sabesp ON",                  "tipo": "Ação", "popular": False},
+    {"ticker": "CMIG4", "nome": "Cemig PN",                   "tipo": "Ação", "popular": False},
+    {"ticker": "BBSE3", "nome": "BB Seguridade ON",           "tipo": "Ação", "popular": False},
+    {"ticker": "SANB11","nome": "Santander Unit",             "tipo": "Ação", "popular": False},
+    {"ticker": "KLBN11","nome": "Klabin Unit",                "tipo": "Ação", "popular": False},
+    {"ticker": "EMBR3", "nome": "Embraer ON",                 "tipo": "Ação", "popular": False},
+    {"ticker": "JBSS3", "nome": "JBS ON",                     "tipo": "Ação", "popular": False},
+    {"ticker": "MRFG3", "nome": "Marfrig ON",                 "tipo": "Ação", "popular": False},
+    {"ticker": "BEEF3", "nome": "Minerva ON",                 "tipo": "Ação", "popular": False},
+    {"ticker": "CYRE3", "nome": "Cyrela ON",                  "tipo": "Ação", "popular": False},
+    {"ticker": "MRVE3", "nome": "MRV ON",                     "tipo": "Ação", "popular": False},
+    {"ticker": "EZTC3", "nome": "Eztec ON",                   "tipo": "Ação", "popular": False},
+    {"ticker": "ARZZ3", "nome": "Arezzo ON",                  "tipo": "Ação", "popular": False},
+    {"ticker": "NTCO3", "nome": "Natura ON",                  "tipo": "Ação", "popular": False},
+    {"ticker": "PCAR3", "nome": "Pão de Açúcar ON",           "tipo": "Ação", "popular": False},
+    {"ticker": "CRFB3", "nome": "Carrefour Brasil ON",        "tipo": "Ação", "popular": False},
+    {"ticker": "RAIL3", "nome": "Rumo ON",                    "tipo": "Ação", "popular": False},
+    {"ticker": "CCRO3", "nome": "CCR ON",                     "tipo": "Ação", "popular": False},
+    {"ticker": "AZUL4", "nome": "Azul PN",                    "tipo": "Ação", "popular": False},
+    {"ticker": "GOLL4", "nome": "Gol PN",                     "tipo": "Ação", "popular": False},
+    {"ticker": "TOTS3", "nome": "Totvs ON",                   "tipo": "Ação", "popular": False},
+    {"ticker": "VIVT3", "nome": "Telefônica Brasil ON",       "tipo": "Ação", "popular": False},
+    {"ticker": "TIMS3", "nome": "TIM ON",                     "tipo": "Ação", "popular": False},
+    {"ticker": "IRBR3", "nome": "IRB Brasil ON",              "tipo": "Ação", "popular": False},
+    {"ticker": "BPAC11","nome": "BTG Pactual Unit",           "tipo": "Ação", "popular": False},
+    {"ticker": "YDUQ3", "nome": "Yduqs ON",                   "tipo": "Ação", "popular": False},
+    {"ticker": "COGN3", "nome": "Cogna ON",                   "tipo": "Ação", "popular": False},
+    {"ticker": "CVCB3", "nome": "CVC ON",                     "tipo": "Ação", "popular": False},
+    {"ticker": "ALPA4", "nome": "Alpargatas PN",              "tipo": "Ação", "popular": False},
+    {"ticker": "SLCE3", "nome": "SLC Agrícola ON",            "tipo": "Ação", "popular": False},
+    {"ticker": "SMTO3", "nome": "São Martinho ON",            "tipo": "Ação", "popular": False},
+    {"ticker": "AGRO3", "nome": "BrasilAgro ON",              "tipo": "Ação", "popular": False},
+    {"ticker": "CASH3", "nome": "Méliuz ON",                  "tipo": "Ação", "popular": False},
+    {"ticker": "ENGI11","nome": "Energisa Unit",              "tipo": "Ação", "popular": False},
+    # ── FIIs — popular ──
+    {"ticker": "MXRF11","nome": "Maxi Renda FII",             "tipo": "FII", "popular": True},
+    # ── FIIs — catálogo geral ──
+    {"ticker": "HGLG11","nome": "CSHG Logística FII",         "tipo": "FII", "popular": False},
+    {"ticker": "KNRI11","nome": "Kinea Renda Imobiliária FII","tipo": "FII", "popular": False},
+    {"ticker": "XPLG11","nome": "XP Log FII",                 "tipo": "FII", "popular": False},
+    {"ticker": "VISC11","nome": "Vinci Shopping Centers FII", "tipo": "FII", "popular": False},
+    {"ticker": "KNCR11","nome": "Kinea Rendimentos FII",      "tipo": "FII", "popular": False},
+    {"ticker": "BCFF11","nome": "FoF Brasil Plural FII",      "tipo": "FII", "popular": False},
+    {"ticker": "HGRU11","nome": "CSHG Renda Urbana FII",      "tipo": "FII", "popular": False},
+    {"ticker": "XPML11","nome": "XP Malls FII",               "tipo": "FII", "popular": False},
+    {"ticker": "VILG11","nome": "Vinci Logística FII",        "tipo": "FII", "popular": False},
+    {"ticker": "IRDM11","nome": "Iridium Recebíveis FII",     "tipo": "FII", "popular": False},
+    {"ticker": "RECT11","nome": "REC Recebíveis FII",         "tipo": "FII", "popular": False},
+    {"ticker": "BTLG11","nome": "BTG Pactual Logística FII",  "tipo": "FII", "popular": False},
+    {"ticker": "KNIP11","nome": "Kinea Índices de Preços FII","tipo": "FII", "popular": False},
+    {"ticker": "HFOF11","nome": "Hedge Top FOFII 3 FII",      "tipo": "FII", "popular": False},
+    {"ticker": "ALZR11","nome": "Alianza Trust Renda FII",    "tipo": "FII", "popular": False},
+    {"ticker": "VRTA11","nome": "Fator Verita FII",           "tipo": "FII", "popular": False},
+    {"ticker": "HGBS11","nome": "CSHG Brasil Shopping FII",   "tipo": "FII", "popular": False},
+    {"ticker": "MALL11","nome": "Malls Brasil Plural FII",    "tipo": "FII", "popular": False},
+    # ── ETFs — popular ──
+    {"ticker": "BOVA11","nome": "iShares Ibovespa ETF",       "tipo": "ETF", "popular": True},
+    # ── ETFs — catálogo geral ──
+    {"ticker": "IVVB11","nome": "iShares S&P 500 ETF",        "tipo": "ETF", "popular": False},
+    {"ticker": "SMAL11","nome": "iShares Small Cap ETF",      "tipo": "ETF", "popular": False},
+    {"ticker": "DIVO11","nome": "iShares Dividendos ETF",     "tipo": "ETF", "popular": False},
+    {"ticker": "GOLD11","nome": "Trend Ouro ETF",             "tipo": "ETF", "popular": False},
+    {"ticker": "FIND11","nome": "iShares Financials ETF",     "tipo": "ETF", "popular": False},
+    {"ticker": "BRAX11","nome": "iShares Brasil Amplo ETF",   "tipo": "ETF", "popular": False},
 ]
+
+_TIPO_ICONE = {"Ação": "📈", "FII": "🏢", "ETF": "📊"}
 
 # ==============================
 # ESTADO
@@ -132,21 +220,128 @@ def restaurar_placeholder(entry, placeholder):
         entry.insert(0, placeholder)
         entry.config(fg="#888888")
 
+def _normalizar_texto(txt):
+    """Minúsculas, sem acentos, sem pontuação — facilita busca e casamento por palavras-chave."""
+    txt = txt.lower().strip()
+    txt = "".join(
+        c for c in unicodedata.normalize("NFD", txt)
+        if unicodedata.category(c) != "Mn"
+    )
+    return txt
+
 # ==============================
-# VERIFICAÇÃO + ADIÇÃO DE ATIVO
+# BUSCA DE ATIVOS (catálogo curado + fallback manual)
 # ==============================
-def adicionar_ativo():
-    raw = entry_novo_ativo.get().strip().upper()
-    if not raw or raw == "EX: EGIE3":
+def _buscar_no_catalogo(query_normalizada, limite=8, apenas_disponiveis=True):
+    """
+    Busca no CATALOGO_ATIVOS por ticker ou nome.
+    Prioridade: ticker idêntico > ticker começa com > ticker contém > nome contém
+    > todas as palavras da busca aparecem em qualquer ordem (ex: "etf ouro" bate
+    com "Trend Ouro ETF"). Com busca vazia, retorna os marcados como populares.
+    Se apenas_disponiveis=False, inclui também ativos já adicionados (usado só
+    para diferenciar "não existe no catálogo" de "já está na sua lista").
+    """
+    base = CATALOGO_ATIVOS
+    if apenas_disponiveis:
+        base = [a for a in base if (a["ticker"] + ".SA") not in ativos_vars]
+
+    if not query_normalizada:
+        return [a for a in base if a["popular"]][:limite]
+
+    palavras_busca = query_normalizada.split()
+    exatos, prefixo, contem_ticker, contem_nome, todas_palavras = [], [], [], [], []
+    for ativo in base:
+        ticker_norm = _normalizar_texto(ativo["ticker"])
+        nome_norm   = _normalizar_texto(ativo["nome"])
+        combinado   = f"{ticker_norm} {nome_norm}"
+        if ticker_norm == query_normalizada:
+            exatos.append(ativo)
+        elif ticker_norm.startswith(query_normalizada):
+            prefixo.append(ativo)
+        elif query_normalizada in ticker_norm:
+            contem_ticker.append(ativo)
+        elif query_normalizada in nome_norm:
+            contem_nome.append(ativo)
+        elif len(palavras_busca) > 1 and all(p in combinado for p in palavras_busca):
+            todas_palavras.append(ativo)
+
+    return (exatos + prefixo + contem_ticker + contem_nome + todas_palavras)[:limite]
+
+def _renderizar_resultados_busca(texto_busca=""):
+    """Redesenha a lista de resultados abaixo do campo de busca."""
+    for w in frame_resultados_busca.winfo_children():
+        w.destroy()
+
+    query_norm  = _normalizar_texto(texto_busca)
+    resultados  = _buscar_no_catalogo(query_norm)
+
+    if query_norm and not resultados:
+        # Existe no catálogo mas já foi adicionado? Mensagem diferente de "não encontrado".
+        ja_adicionado = _buscar_no_catalogo(query_norm, apenas_disponiveis=False)
+        if ja_adicionado:
+            nomes = ", ".join(a["ticker"] for a in ja_adicionado[:3])
+            tk.Label(frame_resultados_busca, text=f"✔ {nomes} já está na sua lista.",
+                     bg=CARD, fg="#888888", font=("Arial", 8, "italic"), wraplength=190, justify="left"
+                     ).pack(anchor="w", padx=4, pady=(2, 4))
+            return
+
+        tk.Label(frame_resultados_busca, text="Nenhum resultado no catálogo.",
+                 bg=CARD, fg="#888888", font=("Arial", 8, "italic")
+                 ).pack(anchor="w", padx=4, pady=(2, 0))
+        texto_original = texto_busca.strip().upper()
+        tk.Button(frame_resultados_busca, text=f"➕ Adicionar \"{texto_original}\" mesmo assim",
+                  bg=BTN, fg=TXT, font=("Arial", 8), relief="flat", cursor="hand2",
+                  anchor="w", command=lambda: _adicionar_ativo_manual(texto_original)
+                  ).pack(fill="x", padx=4, pady=2)
         return
 
-    ticker = raw if raw.endswith(".SA") else raw + ".SA"
+    if not query_norm:
+        if not resultados:
+            tk.Label(frame_resultados_busca,
+                     text="✔ Todos os populares já estão na sua lista.\nBusque outro ativo acima.",
+                     bg=CARD, fg="#888888", font=("Arial", 7, "italic"), justify="left"
+                     ).pack(anchor="w", padx=4, pady=(2, 4))
+            return
+        tk.Label(frame_resultados_busca, text="⭐ Populares", bg=CARD, fg="#888888",
+                 font=("Arial", 7, "bold")).pack(anchor="w", padx=4, pady=(2, 0))
 
+    for ativo in resultados:
+        icone = _TIPO_ICONE.get(ativo["tipo"], "")
+        texto = f"{icone} {ativo['ticker']} — {ativo['nome']}"
+        tk.Button(frame_resultados_busca, text=texto, bg=BTN, fg=TXT,
+                  font=("Arial", 8), relief="flat", cursor="hand2", anchor="w",
+                  command=lambda a=ativo: _adicionar_do_catalogo(a)
+                  ).pack(fill="x", padx=4, pady=1)
+
+def _on_busca_ativo_change(event=None):
+    texto = entry_busca_ativo.get()
+    if texto == PLACEHOLDER_BUSCA:
+        texto = ""
+    _renderizar_resultados_busca(texto)
+
+def _adicionar_do_catalogo(ativo):
+    """Adiciona um ativo do catálogo curado — sem checagem de rede (já é conhecido/válido)."""
+    ticker = ativo["ticker"] + ".SA"
+    if ticker in ativos_vars:
+        return
+    var = tk.BooleanVar(value=True)
+    ativos_vars[ticker] = var
+    ativos_ordem.append(ticker)
+    _criar_checkbox(ticker, var)
+    entry_busca_ativo.delete(0, tk.END)
+    label_status.config(text=f"✔ {ativo['ticker']} adicionado!", fg="#cc0000")
+    _renderizar_resultados_busca("")
+
+def _adicionar_ativo_manual(raw_text):
+    """Fallback: ticker fora do catálogo — valida no yfinance antes de adicionar (como antes)."""
+    raw = raw_text.strip().upper()
+    if not raw:
+        return
+    ticker = raw if raw.endswith(".SA") else raw + ".SA"
     if ticker in ativos_vars:
         label_status.config(text=f"{nome_exibicao(ticker)} já está na lista.", fg="#e60000")
         return
 
-    btn_add.config(state="disabled", text="...")
     label_status.config(text=f"Verificando {nome_exibicao(ticker)}...", fg="#aaaaaa")
 
     def verificar():
@@ -156,12 +351,11 @@ def adicionar_ativo():
             valido = not hist.empty
         except Exception:
             valido = False
-        root.after(0, lambda: _pos_verificacao(ticker, valido))
+        root.after(0, lambda: _pos_verificacao_manual(ticker, valido))
 
     threading.Thread(target=verificar, daemon=True).start()
 
-def _pos_verificacao(ticker, valido):
-    btn_add.config(state="normal", text="+")
+def _pos_verificacao_manual(ticker, valido):
     if not valido:
         label_status.config(text=f"❌ {nome_exibicao(ticker)} não encontrado.", fg="#FF5252")
         return
@@ -169,10 +363,9 @@ def _pos_verificacao(ticker, valido):
     ativos_vars[ticker] = var
     ativos_ordem.append(ticker)
     _criar_checkbox(ticker, var)
-    entry_novo_ativo.delete(0, tk.END)
-    entry_novo_ativo.insert(0, "ex: EGIE3")
-    entry_novo_ativo.config(fg="#888888")
+    entry_busca_ativo.delete(0, tk.END)
     label_status.config(text=f"✔ {nome_exibicao(ticker)} adicionado!", fg="#cc0000")
+    _renderizar_resultados_busca("")
 
 def _criar_checkbox(ticker, var):
     idx = ativos_ordem.index(ticker)
@@ -654,7 +847,7 @@ def exportar_pdf():
                                        spaceAfter=3, leading=12)
 
         # Cabeçalho
-        story.append(Paragraph("Dashboard de Investimentos", titulo_style))
+        story.append(Paragraph("INvest", titulo_style))
         story.append(Paragraph(f"Relatório gerado em {datetime.now().strftime('%d/%m/%Y %H:%M')}", sub_style))
 
         # Gráfico
@@ -1139,7 +1332,6 @@ def calcular_meta():
                 raise ValueError
 
             # Fórmula: n = log(1 + meta*r/PMT) / log(1+r)
-            import math
             if taxa_mensal == 0:
                 meses = meta / aporte
             else:
@@ -1162,7 +1354,6 @@ def calcular_meta():
 
         else:
             # Usuário informou o prazo em meses → calcula aporte mensal
-            import math
             meses = int(entry_aporte_ou_prazo.get())
             if meses <= 0:
                 raise ValueError
@@ -1194,10 +1385,9 @@ def _atualizar_label_modo(*args):
 # JANELA PRINCIPAL
 # ==============================
 root = tk.Tk()
-root.title("Dashboard de Investimentos")
+root.title("INvest")
 root.geometry("1280x800")
 try:
-    root.iconbitmap(default="")  # sem ícone externo
     root.wm_iconname("📊")
 except Exception:
     pass
@@ -1241,28 +1431,34 @@ canvas_scroll.bind_all("<MouseWheel>",
     lambda e: canvas_scroll.yview_scroll(int(-1*(e.delta/120)), "units"))
 
 tk.Frame(frame_sidebar, bg="#2e2e2e", height=1).pack(fill="x", padx=6, pady=6)
-tk.Label(frame_sidebar, text="Adicionar ativo:", bg=CARD, fg="#aaaaaa",
+tk.Label(frame_sidebar, text="🔍 Buscar ativo:", bg=CARD, fg="#aaaaaa",
          font=("Arial", 8)).pack(padx=6, anchor="w")
 
-frame_add = tk.Frame(frame_sidebar, bg=CARD)
-frame_add.pack(fill="x", padx=6, pady=(2, 0))
+PLACEHOLDER_BUSCA = "ex: MXRF11, Vale, BOVA11..."
 
-entry_novo_ativo = tk.Entry(frame_add, bg=BTN, fg="#888888",
-                             insertbackground=TXT, font=("Arial", 9), width=9)
-entry_novo_ativo.insert(0, "ex: EGIE3")
-entry_novo_ativo.bind("<FocusIn>",  lambda e: limpar_entry_placeholder(entry_novo_ativo, "ex: EGIE3"))
-entry_novo_ativo.bind("<FocusOut>", lambda e: restaurar_placeholder(entry_novo_ativo, "ex: EGIE3"))
-entry_novo_ativo.bind("<Return>", lambda e: adicionar_ativo())
-entry_novo_ativo.pack(side="left", fill="x", expand=True)
+frame_busca_ativo = tk.Frame(frame_sidebar, bg=CARD)
+frame_busca_ativo.pack(fill="x", padx=6, pady=(2, 0))
 
-btn_add = tk.Button(frame_add, text="+", bg=ACCENT, fg="#000000",
-                    font=("Arial", 10, "bold"), relief="flat", cursor="hand2",
-                    width=2, command=adicionar_ativo)
-btn_add.pack(side="left", padx=(4, 0))
+entry_busca_ativo = tk.Entry(frame_busca_ativo, bg=BTN, fg="#888888",
+                              insertbackground=TXT, font=("Arial", 9))
+entry_busca_ativo.insert(0, PLACEHOLDER_BUSCA)
+entry_busca_ativo.bind("<FocusIn>", lambda e: (
+    limpar_entry_placeholder(entry_busca_ativo, PLACEHOLDER_BUSCA),
+    _renderizar_resultados_busca(entry_busca_ativo.get())
+))
+entry_busca_ativo.bind("<FocusOut>", lambda e: restaurar_placeholder(entry_busca_ativo, PLACEHOLDER_BUSCA))
+entry_busca_ativo.bind("<KeyRelease>", _on_busca_ativo_change)
+entry_busca_ativo.pack(fill="x")
+
+frame_resultados_busca = tk.Frame(frame_sidebar, bg=CARD)
+frame_resultados_busca.pack(fill="x", padx=2, pady=(4, 0))
 
 label_status = tk.Label(frame_sidebar, text="", bg=CARD, fg="#cc0000",
                          font=("Arial", 8), wraplength=160)
 label_status.pack(padx=6, pady=4)
+
+# Popula a lista de "⭐ Populares" assim que a sidebar existe
+_renderizar_resultados_busca("")
 
 # ── PAINEL DE COTAÇÕES ──
 tk.Frame(frame_sidebar, bg="#2e2e2e", height=1).pack(fill="x", padx=6, pady=(4, 0))
@@ -1557,7 +1753,7 @@ resultado_meta.pack()
 # ======================================================
 # ETAPA 5 — CARTEIRA PESSOAL (Tópicos 1-5)
 # ======================================================
-import json, os, math
+import math
 
 CARTEIRA_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "carteira.json")
 
@@ -1589,7 +1785,7 @@ def _registrar_patrimonio(custo_total, patrimonio, lucro_rs, lucro_pct, n_ativos
     Evita duplicatas — só registra uma vez por dia.
     """
     try:
-        conn = conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(DB_PATH)
         cur  = conn.cursor()
         hoje = datetime.now().strftime("%Y-%m-%d")
         # Verifica se já registrou hoje
@@ -1679,11 +1875,15 @@ def _salvar_carteira(carteira):
         json.dump(carteira, f, ensure_ascii=False, indent=2)
     try:
         n = len(carteira)
-        root.title(f"Dashboard de Investimentos — {n} ativo{'s' if n!=1 else ''} na carteira")
+        root.title(f"INvest — {n} ativo{'s' if n!=1 else ''} na carteira")
     except Exception:
         pass
 
 _carteira = _carregar_carteira()
+
+# Cache dos dados calculados na última atualização da carteira (P&L, indicadores de
+# risco) — o Assistente da Carteira consulta isso em vez de reprocessar/rebaixar dados.
+_cache_analitico = {"rows": [], "indicadores": {}, "atualizado_em": None}
 
 # ── 2 & 3. Busca preço atual + cálculo de P&L ──
 
@@ -2203,7 +2403,6 @@ def _calcular_pl(carteira, precos):
         if preco_atual is None or preco_atual <= 0:
             continue  # ativo delistado ou sem dados — ignora silenciosamente
         qtd         = float(pos["qtd"])
-        pm          = float(pos["preco_edio"] if "preco_medio" not in pos else pos["preco_medio"])
         pm          = float(pos["preco_medio"])
         custo       = qtd * pm
         patrimonio  = qtd * preco_atual
@@ -2385,6 +2584,11 @@ def _aplicar_resultados(resultado):
         return
 
     rows = _calcular_pl(_carteira, precos)
+
+    # Cache para o Assistente da Carteira consultar sem reprocessar/rebaixar dados
+    _cache_analitico["rows"]         = rows
+    _cache_analitico["indicadores"]  = indicadores
+    _cache_analitico["atualizado_em"] = datetime.now()
 
     # Indicadores de risco (Beta / Sharpe / Drawdown) — reaproveita dados já baixados
     _renderizar_tabela_risco(indicadores, frame_risco)
@@ -2712,15 +2916,200 @@ frame_resumo = tk.Frame(frame_cart, bg=CART_BG)
 frame_resumo.pack(fill="x", padx=4, pady=(4, 10))
 
 
+# ======================================================
+# ASSISTENTE DA CARTEIRA — motor de regras (sem custo, 100% local)
+# ======================================================
+# Responde perguntas comuns reaproveitando os cálculos já feitos pela carteira
+# (P&L, alertas, score de diversificação, resumo executivo, indicadores de risco).
+# Não usa nenhuma API paga — roda inteiramente offline.
+#
+# Gancho para o futuro: _ollama_disponivel() detecta se há um LLM local rodando
+# (via Ollama, http://localhost:11434). Hoje ela só é usada para informar o status
+# na resposta de fallback; se um dia for implementado o encaminhamento de perguntas
+# livres para o modelo local, o ponto de entrada já está pronto aqui.
+
+def _ollama_disponivel():
+    """
+    Verifica rapidamente se há um servidor Ollama local rodando.
+    Não lança exceção nem trava a UI — apenas informa true/false.
+    Hoje isso não é usado para gerar respostas (só motor de regras está ativo),
+    fica pronto para quando o encaminhamento a um LLM local for implementado.
+    """
+    import urllib.request
+    try:
+        urllib.request.urlopen("http://localhost:11434/api/tags", timeout=0.3)
+        return True
+    except Exception:
+        return False
+
+# Palavras-chave por intenção — a primeira que bater "ganha"
+_INTENCOES = [
+    ("resumo",        ["resumo", "visao geral", "situacao", "analise minha", "analise geral", "como esta minha carteira"]),
+    ("risco",         ["maior risco", "mais arriscado", "mais volatil", "risco da carteira", "qual o risco"]),
+    ("cdi",           ["cdi", "renda fixa", "batendo", "bater o"]),
+    ("diversificacao",["diversific", "concentra"]),
+    ("vender",        ["vender", "reduzir posicao"]),
+    ("alertas",       ["alerta", "atencao", "cuidado"]),
+    ("cdb",           ["cdb"]),
+    ("indicadores",   ["beta", "sharpe", "drawdown", "indicador"]),
+    ("score",         ["score", "nota"]),
+]
+
+def _detectar_intencao(pergunta_normalizada):
+    for intencao, palavras in _INTENCOES:
+        if any(p in pergunta_normalizada for p in palavras):
+            return intencao
+    return None
+
+def _resposta_sem_dados():
+    return ("⚠ Ainda não tenho dados suficientes da sua carteira. Clique em "
+            "\"↻ Atualizar\" no card Carteira Pessoal e tente novamente.")
+
+def _responder_resumo():
+    rows = _cache_analitico["rows"]
+    if not rows:
+        return _resposta_sem_dados()
+    return _gerar_resumo_executivo(rows, _carteira)
+
+def _responder_risco():
+    rows = _cache_analitico["rows"]
+    if not rows:
+        return _resposta_sem_dados()
+    # Usa volatilidade percentual do lucro como proxy simples de risco por ativo,
+    # complementado pelo Beta/Drawdown já calculados quando disponíveis.
+    indicadores = _cache_analitico["indicadores"]
+    pior_dd = None
+    for ticker, ind in indicadores.items():
+        dd = ind.get("drawdown")
+        if dd is not None and (pior_dd is None or dd < pior_dd[1]):
+            pior_dd = (ticker, dd)
+    if pior_dd:
+        nome = nome_exibicao(pior_dd[0])
+        return (f"📉 {nome} é o ativo com a queda mais acentuada em relação ao topo "
+                f"histórico (drawdown de {pior_dd[1]:.1f}%) — é o ponto de maior risco "
+                f"da sua carteira no momento.")
+    # Fallback: maior variação negativa desde a compra
+    pior = min(rows, key=lambda r: r["lucro_pct"])
+    return (f"📉 {pior['nome']} é o ativo com pior desempenho desde a compra "
+            f"({pior['lucro_pct']:+.2f}%) — vale reavaliar essa posição.")
+
+def _responder_cdi():
+    rows = _cache_analitico["rows"]
+    if not rows:
+        return _resposta_sem_dados()
+    total_custo = sum(r["custo"] for r in rows)
+    total_lucro = sum(r["lucro_rs"] for r in rows)
+    total_pct   = (total_lucro / total_custo * 100) if total_custo > 0 else 0
+    cdis = [_cdi_desde_compra(r["data_compra"]) for r in rows if _cdi_desde_compra(r["data_compra"]) is not None]
+    cdi_medio = sum(cdis) / len(cdis) if cdis else None
+    if cdi_medio is None:
+        return f"Sua carteira rendeu {total_pct:+.2f}% até agora, mas não consegui calcular o CDI do período para comparar."
+    diff = total_pct - cdi_medio
+    if diff >= 0:
+        return (f"✅ Sim! Sua carteira rendeu {total_pct:+.2f}% contra {cdi_medio:+.2f}% "
+                f"do CDI no mesmo período médio — está {diff:.2f} pontos percentuais acima.")
+    return (f"🔻 Não — sua carteira rendeu {total_pct:+.2f}% contra {cdi_medio:+.2f}% "
+            f"do CDI no mesmo período médio — está {abs(diff):.2f} pontos percentuais abaixo.")
+
+def _responder_diversificacao():
+    if not _carteira:
+        return _resposta_sem_dados()
+    score, msg = _calcular_score_diversificacao(_carteira)
+    return f"{msg} (nota {score}/10)"
+
+def _responder_vender():
+    rows = _cache_analitico["rows"]
+    if not rows:
+        return _resposta_sem_dados()
+    candidatos = [r for r in rows if r["lucro_pct"] <= -8]
+    if candidatos:
+        pior = min(candidatos, key=lambda r: r["lucro_pct"])
+        return (f"🔴 {pior['nome']} está {pior['lucro_pct']:+.2f}% desde a compra — é o "
+                f"principal candidato a reavaliação. Isso não é uma recomendação de "
+                f"investimento, só um apontamento baseado na posição atual.")
+    return ("Nenhum ativo está em queda acentuada (-8% ou mais) no momento — não "
+            "identifiquei um candidato claro à venda pelos critérios que uso.")
+
+def _responder_alertas():
+    rows = _cache_analitico["rows"]
+    if not rows:
+        return _resposta_sem_dados()
+    alertas = _gerar_alertas_carteira(rows)
+    linhas = [f"{icone} {texto}" for icone, texto, _cor in alertas]
+    return "\n".join(linhas)
+
+def _responder_cdb():
+    if not _cdbs:
+        return "Você ainda não tem CDBs cadastrados na carteira."
+    total_aplicado = total_rend = 0.0
+    for c in _cdbs:
+        rend, total, _dias = _calcular_rendimento_cdb(c["valor"], c["pct_cdi"], c["data"])
+        total_aplicado += c["valor"]
+        total_rend     += rend
+    rent_pct = (total_rend / total_aplicado * 100) if total_aplicado > 0 else 0
+    return (f"🏦 Você tem {len(_cdbs)} CDB(s) cadastrado(s), totalizando "
+            f"R$ {total_aplicado:,.2f} aplicados, com rendimento acumulado de "
+            f"R$ {total_rend:+,.2f} ({rent_pct:+.2f}%).")
+
+def _responder_indicadores():
+    indicadores = _cache_analitico["indicadores"]
+    if not indicadores:
+        return _resposta_sem_dados()
+    linhas = []
+    for ticker, ind in indicadores.items():
+        beta = f"{ind['beta']:.2f}" if ind.get("beta") is not None else "N/D"
+        sharpe = f"{ind['sharpe']:.2f}" if ind.get("sharpe") is not None else "N/D"
+        dd = f"{ind['drawdown']:.1f}%" if ind.get("drawdown") is not None else "N/D"
+        linhas.append(f"• {nome_exibicao(ticker)} — Beta {beta} | Sharpe {sharpe} | Drawdown {dd}")
+    return "📐 Indicadores de risco por ativo:\n" + "\n".join(linhas)
+
+def _responder_score():
+    return _responder_diversificacao()
+
+_RESPOSTAS_POR_INTENCAO = {
+    "resumo":         _responder_resumo,
+    "risco":          _responder_risco,
+    "cdi":            _responder_cdi,
+    "diversificacao": _responder_diversificacao,
+    "vender":         _responder_vender,
+    "alertas":        _responder_alertas,
+    "cdb":            _responder_cdb,
+    "indicadores":    _responder_indicadores,
+    "score":          _responder_score,
+}
+
+def _responder_pergunta_carteira(pergunta):
+    """
+    Ponto de entrada do Assistente da Carteira. Roda 100% localmente, sem custo.
+    Casamento por palavras-chave sobre os dados já calculados da carteira.
+    """
+    pergunta_norm = _normalizar_texto(pergunta)
+    intencao = _detectar_intencao(pergunta_norm)
+    if intencao is None:
+        status_ollama = "🔌 Nenhum modelo de IA local detectado." if not _ollama_disponivel() else "🔌 Ollama detectado, mas ainda não configurado para responder perguntas livres."
+        return (
+            "🤔 Não reconheci essa pergunta no meu roteiro atual. Posso responder sobre: "
+            "resumo da carteira, maior risco, se está batendo o CDI, diversificação, "
+            "qual ativo considerar vender, alertas, CDBs e indicadores (Beta/Sharpe/Drawdown).\n\n"
+            f"{status_ollama}"
+        )
+    return _RESPOSTAS_POR_INTENCAO[intencao]()
+
 
 # ==============================
-# INICIALIZAR CHECKBOXES PADRÃO
+# INICIALIZAR CHECKBOXES PADRÃO — a partir dos "populares" do catálogo
 # ==============================
-for ticker in ATIVOS_PADRAO:
+for _ativo_pop in CATALOGO_ATIVOS:
+    if not _ativo_pop["popular"]:
+        continue
+    ticker = _ativo_pop["ticker"] + ".SA"
     var = tk.BooleanVar(value=True)
     ativos_vars[ticker] = var
     ativos_ordem.append(ticker)
     _criar_checkbox(ticker, var)
+
+# Atualiza a lista de resultados da busca (os populares recém-marcados somem da lista)
+_renderizar_resultados_busca("")
 
 # Mostra mensagem inicial no card de insights
 _montar_insights([], frame_insights)
@@ -2742,404 +3131,109 @@ except Exception:
     pass
 
 
-
 # ======================================================
-# UI — ETAPA 6: IA CONSULTORA
+# UI — ASSISTENTE DA CARTEIRA (motor de regras, sem custo)
 # ======================================================
-IA_BG    = "#111111"
-IA_BORDA = "#cc0000"
+ASSIST_BG    = "#111111"
+ASSIST_BORDA = "#cc0000"
 
-frame_ia_outer = tk.Frame(frame_conteudo, bg=IA_BORDA)
-frame_ia_outer.pack(fill="x", pady=(10, 0))
+frame_assist_outer = tk.Frame(frame_conteudo, bg=ASSIST_BORDA)
+frame_assist_outer.pack(fill="x", pady=(10, 0))
 
-frame_ia = tk.Frame(frame_ia_outer, bg=IA_BG)
-frame_ia.pack(fill="both", expand=True, padx=2, pady=2)
+frame_assist = tk.Frame(frame_assist_outer, bg=ASSIST_BG)
+frame_assist.pack(fill="both", expand=True, padx=2, pady=2)
 
 # Cabeçalho
-cab_ia = tk.Frame(frame_ia, bg="#0d0d0d")
-cab_ia.pack(fill="x")
-tk.Label(cab_ia, text="🤖  IA Consultora", bg="#0d0d0d", fg=IA_BORDA,
+cab_assist = tk.Frame(frame_assist, bg="#0d0d0d")
+cab_assist.pack(fill="x")
+tk.Label(cab_assist, text="🧭  Assistente da Carteira", bg="#0d0d0d", fg=ASSIST_BORDA,
          font=("Arial", 11, "bold"), pady=6).pack(side="left", padx=12)
-tk.Label(cab_ia, text="Claude → GPT-4o-mini → Gemini  |  fallback automático", bg="#0d0d0d", fg="#555555",
-         font=("Arial", 8)).pack(side="left", padx=4)
-
-# Status das chaves
-def _status_chave(nome, chave):
-    ok  = "✔" if chave else "✘"
-    cor = "#00C896" if chave else "#FF5252"
-    return nome, ok, cor
-
-frame_ia_keys = tk.Frame(cab_ia, bg="#0d0d0d")
-frame_ia_keys.pack(side="right", padx=12)
-for nome, chave in [("Anthropic", ANTHROPIC_API_KEY), ("OpenAI", OPENAI_API_KEY), ("Gemini", GOOGLE_API_KEY)]:
-    n, ok, cor = _status_chave(nome, chave)
-    tk.Label(frame_ia_keys, text=f"{ok} {n}", bg="#0d0d0d", fg=cor,
-             font=("Arial", 8)).pack(side="left", padx=6)
+tk.Label(cab_assist, text="100% local · sem custo · sem enviar dados para fora",
+         bg="#0d0d0d", fg="#555555", font=("Arial", 8)).pack(side="left", padx=4)
 
 # Campo de pergunta
-frame_ia_input = tk.Frame(frame_ia, bg=IA_BG)
-frame_ia_input.pack(fill="x", padx=10, pady=(8, 4))
+frame_assist_input = tk.Frame(frame_assist, bg=ASSIST_BG)
+frame_assist_input.pack(fill="x", padx=10, pady=(8, 4))
 
-tk.Label(frame_ia_input, text="Sua pergunta:", bg=IA_BG, fg="#aaaaaa",
+tk.Label(frame_assist_input, text="Sua pergunta:", bg=ASSIST_BG, fg="#aaaaaa",
          font=("Arial", 8)).pack(anchor="w")
 
-frame_ia_row = tk.Frame(frame_ia_input, bg=IA_BG)
-frame_ia_row.pack(fill="x")
+frame_assist_row = tk.Frame(frame_assist_input, bg=ASSIST_BG)
+frame_assist_row.pack(fill="x")
 
-entry_ia = tk.Entry(frame_ia_row, bg="#1c1c1c", fg="#e0e0e0",
+entry_assist = tk.Entry(frame_assist_row, bg="#1c1c1c", fg="#e0e0e0",
                     insertbackground="#e0e0e0", font=("Arial", 10),
                     relief="flat")
-entry_ia.pack(side="left", fill="x", expand=True, ipady=6, padx=(0, 8))
-entry_ia.insert(0, "Ex: O que você acha da minha carteira atual?")
-entry_ia.bind("<FocusIn>",  lambda e: limpar_entry_placeholder(entry_ia, "Ex: O que você acha da minha carteira atual?"))
-entry_ia.bind("<FocusOut>", lambda e: restaurar_placeholder(entry_ia, "Ex: O que você acha da minha carteira atual?"))
-entry_ia.bind("<Return>", lambda e: _enviar_pergunta_ia())
+entry_assist.pack(side="left", fill="x", expand=True, ipady=6, padx=(0, 8))
+entry_assist.insert(0, "Ex: Estou batendo o CDI?")
+entry_assist.bind("<FocusIn>",  lambda e: limpar_entry_placeholder(entry_assist, "Ex: Estou batendo o CDI?"))
+entry_assist.bind("<FocusOut>", lambda e: restaurar_placeholder(entry_assist, "Ex: Estou batendo o CDI?"))
+entry_assist.bind("<Return>", lambda e: _enviar_pergunta_assistente())
 
-btn_ia = tk.Button(frame_ia_row, text="✦ Consultar", bg=IA_BORDA, fg="#e0e0e0",
+btn_assist = tk.Button(frame_assist_row, text="✦ Perguntar", bg=ASSIST_BORDA, fg="#e0e0e0",
                    font=("Arial", 9, "bold"), relief="flat", cursor="hand2",
-                   command=lambda: _enviar_pergunta_ia())
-btn_ia.pack(side="left")
+                   command=lambda: _enviar_pergunta_assistente())
+btn_assist.pack(side="left")
 
 # Sugestões rápidas
-frame_ia_sugestoes = tk.Frame(frame_ia, bg=IA_BG)
-frame_ia_sugestoes.pack(fill="x", padx=10, pady=(0, 6))
-tk.Label(frame_ia_sugestoes, text="Sugestões:", bg=IA_BG, fg="#555555",
+frame_assist_sugestoes = tk.Frame(frame_assist, bg=ASSIST_BG)
+frame_assist_sugestoes.pack(fill="x", padx=10, pady=(0, 6))
+tk.Label(frame_assist_sugestoes, text="Sugestões:", bg=ASSIST_BG, fg="#555555",
          font=("Arial", 7)).pack(side="left", padx=(0, 6))
 
-sugestoes = [
-    "Analise minha carteira",
+_sugestoes_assist = [
+    "Resumo da carteira",
     "Qual meu maior risco?",
     "Estou batendo o CDI?",
     "Devo diversificar?",
     "Qual ativo vender?",
+    "Meus alertas",
 ]
-for s in sugestoes:
-    tk.Button(frame_ia_sugestoes, text=s, bg="#2e2e2e", fg="#aaaaaa",
+for s in _sugestoes_assist:
+    tk.Button(frame_assist_sugestoes, text=s, bg="#2e2e2e", fg="#aaaaaa",
               font=("Arial", 7), relief="flat", cursor="hand2",
-              command=lambda txt=s: _sugestao_ia(txt)).pack(side="left", padx=2)
+              command=lambda txt=s: _sugestao_assistente(txt)).pack(side="left", padx=2)
 
 # Área de resposta
-frame_ia_resp = tk.Frame(frame_ia, bg=IA_BG)
-frame_ia_resp.pack(fill="x", padx=10, pady=(0, 10))
+frame_assist_resp = tk.Frame(frame_assist, bg=ASSIST_BG)
+frame_assist_resp.pack(fill="x", padx=10, pady=(0, 10))
 
-txt_ia = tk.Text(frame_ia_resp, bg="#1c1c1c", fg="#e0e0e0",
+txt_assist = tk.Text(frame_assist_resp, bg="#1c1c1c", fg="#e0e0e0",
                  font=("Arial", 9), relief="flat", wrap="word",
-                 height=8, state="disabled", padx=10, pady=8)
-txt_ia.pack(fill="x")
+                 height=6, state="disabled", padx=10, pady=8)
+txt_assist.pack(fill="x")
 
-scroll_ia = tk.Scrollbar(frame_ia_resp, command=txt_ia.yview, bg="#2e2e2e")
-txt_ia.config(yscrollcommand=scroll_ia.set)
+scroll_assist = tk.Scrollbar(frame_assist_resp, command=txt_assist.yview, bg="#2e2e2e")
+txt_assist.config(yscrollcommand=scroll_assist.set)
 
-# ── Funções da IA ──
-def _exibir_resposta_ia(texto):
-    txt_ia.config(state="normal")
-    txt_ia.delete("1.0", "end")
-    txt_ia.insert("end", texto)
-    txt_ia.config(state="disabled")
-    btn_ia.config(state="normal", text="✦ Consultar")
+# Mensagem inicial
+def _exibir_resposta_assistente(texto):
+    txt_assist.config(state="normal")
+    txt_assist.delete("1.0", "end")
+    txt_assist.insert("end", texto)
+    txt_assist.config(state="disabled")
+    btn_assist.config(state="normal", text="✦ Perguntar")
 
-def _sugestao_ia(texto):
-    entry_ia.delete(0, "end")
-    entry_ia.insert(0, texto)
-    entry_ia.config(fg="#e0e0e0")
-    _enviar_pergunta_ia()
+def _sugestao_assistente(texto):
+    entry_assist.delete(0, "end")
+    entry_assist.insert(0, texto)
+    entry_assist.config(fg="#e0e0e0")
+    _enviar_pergunta_assistente()
 
-def _enviar_pergunta_ia():
-    pergunta = entry_ia.get().strip()
-    if not pergunta or pergunta == "Ex: O que você acha da minha carteira atual?":
+def _enviar_pergunta_assistente():
+    pergunta = entry_assist.get().strip()
+    if not pergunta or pergunta == "Ex: Estou batendo o CDI?":
         return
-    btn_ia.config(state="disabled", text="⏳ Consultando...")
-    _exibir_resposta_ia("⏳ Processando com GPT-4o-mini e Claude Sonnet...")
+    btn_assist.config(state="disabled", text="⏳ Consultando...")
     def _rodar():
-        resposta = executar_tarefa_financeira(pergunta)
-        root.after(0, lambda: _exibir_resposta_ia(resposta))
+        resposta = _responder_pergunta_carteira(pergunta)
+        root.after(0, lambda: _exibir_resposta_assistente(resposta))
     threading.Thread(target=_rodar, daemon=True).start()
 
-# ======================================================
-# ETAPA 6 — IA CONSULTORA MULTI-LLM
-# GPT-4o-mini: processa dados brutos → JSON estruturado
-# Claude Sonnet: analisa JSON → resposta qualitativa
-# ======================================================
-
-def _montar_contexto_carteira():
-    """Monta dict com todos os dados atuais da carteira para enviar às IAs."""
-    ctx = {}
-    # Carteira de ações
-    if _carteira:
-        precos = _buscar_precos_carteira(list(_carteira.keys()))
-        rows   = _calcular_pl(_carteira, precos)
-        ctx["acoes"] = [
-            {
-                "ticker":     r["ticker"],
-                "nome":       r["nome"],
-                "qtd":        r["qtd"],
-                "preco_medio":r["pm"],
-                "preco_atual":r["preco_atual"],
-                "custo":      round(r["custo"], 2),
-                "patrimonio": round(r["patrimonio"], 2),
-                "lucro_rs":   round(r["lucro_rs"], 2),
-                "lucro_pct":  round(r["lucro_pct"], 2),
-                "data_compra":r["data_compra"],
-                "cdi_periodo":round(_cdi_desde_compra(r["data_compra"]) or 0, 2),
-            }
-            for r in rows
-        ]
-        ctx["total_custo"]  = round(sum(r["custo"]      for r in rows), 2)
-        ctx["total_patrim"] = round(sum(r["patrimonio"] for r in rows), 2)
-        ctx["total_lucro"]  = round(sum(r["lucro_rs"]   for r in rows), 2)
-    else:
-        ctx["acoes"] = []
-
-    # CDBs
-    ctx["cdbs"] = [
-        {
-            "nome":    c["nome"],
-            "valor":   c["valor"],
-            "pct_cdi": c["pct_cdi"],
-            "data":    c["data"],
-            "rendimento": round(_calcular_rendimento_cdb(c["valor"], c["pct_cdi"], c["data"])[0], 2),
-            "total":      round(_calcular_rendimento_cdb(c["valor"], c["pct_cdi"], c["data"])[1], 2),
-        }
-        for c in _cdbs
-    ]
-
-    # Score e CDI atual
-    ctx["cdi_anual_pct"] = CDI_ANUAL * 100
-    ctx["data_consulta"] = datetime.now().strftime("%d/%m/%Y %H:%M")
-
-    return ctx
-
-
-def _chamar_gpt(prompt_sistema, prompt_usuario):
-    """Chama GPT-4o-mini via requests (sem dependência de SDK)."""
-    import urllib.request, urllib.error
-
-    if len(prompt_usuario) > 8000:
-        prompt_usuario = prompt_usuario[:8000] + "\n...[dados truncados]"
-
-    payload = _json_mod.dumps({
-        "model": "gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": prompt_sistema},
-            {"role": "user",   "content": prompt_usuario},
-        ],
-        "max_tokens": 800,
-        "temperature": 0.3,
-    }, ensure_ascii=False).encode("utf-8")
-
-    req = urllib.request.Request(
-        "https://api.openai.com/v1/chat/completions",
-        data=payload,
-        headers={
-            "Content-Type":  "application/json",
-            "Authorization": f"Bearer {OPENAI_API_KEY.strip()}",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = _json_mod.loads(resp.read().decode("utf-8"))
-        return data["choices"][0]["message"]["content"]
-    except urllib.error.HTTPError as e:
-        detalhe = e.read().decode("utf-8", errors="replace")
-        raise Exception(f"HTTP {e.code}: {detalhe}")
-
-
-
-
-
-def _chamar_claude(prompt_sistema, prompt_usuario):
-    """Chama Claude Sonnet via requests (sem dependência de SDK)."""
-    import urllib.request, urllib.error
-
-    # Limita tamanho para evitar payload gigante
-    if len(prompt_usuario) > 8000:
-        prompt_usuario = prompt_usuario[:8000] + "\n...[dados truncados]"
-
-    body = {
-        "model": "claude-3-5-sonnet-20241022",
-        "max_tokens": 1024,
-        "system": prompt_sistema,
-        "messages": [
-            {"role": "user", "content": prompt_usuario},
-        ],
-    }
-    payload = _json_mod.dumps(body, ensure_ascii=False).encode("utf-8")
-
-    req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
-        data=payload,
-        headers={
-            "Content-Type":      "application/json",
-            "x-api-key":         ANTHROPIC_API_KEY.strip(),
-            "anthropic-version": "2023-06-01",
-        },
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = _json_mod.loads(resp.read().decode("utf-8"))
-        return data["content"][0]["text"]
-    except urllib.error.HTTPError as e:
-        detalhe = e.read().decode("utf-8", errors="replace")
-        raise Exception(f"HTTP {e.code}: {detalhe}")
-
-
-def _chamar_gemini(prompt_sistema, prompt_usuario):
-    """Chama Gemini 1.5 Flash via REST puro — sem SDK, só urllib."""
-    import urllib.request, urllib.error
-
-    if len(prompt_usuario) > 8000:
-        prompt_usuario = prompt_usuario[:8000] + "\n...[dados truncados]"
-
-    # Gemini não tem campo system separado — une tudo em um prompt
-    prompt_completo = f"{prompt_sistema}\n\n{prompt_usuario}"
-
-    body = _json_mod.dumps({
-        "contents": [{"parts": [{"text": prompt_completo}]}],
-        "generationConfig": {"maxOutputTokens": 1024, "temperature": 0.4}
-    }, ensure_ascii=False).encode("utf-8")
-
-    chave = os.getenv("GOOGLE_API_KEY", "").strip()
-    # Testa v1 e v1beta com vários modelos — um deles vai funcionar
-    tentativas = [
-        ("v1beta","gemini-2.0-flash-lite"),   # confirmado funcionando
-        ("v1beta","gemini-2.0-flash"),
-        ("v1beta","gemini-1.5-flash-latest"),
-        ("v1",    "gemini-2.0-flash"),
-        ("v1",    "gemini-1.5-flash"),
-    ]
-    ultimo_erro = None
-    for versao, modelo in tentativas:
-        url = (
-            f"https://generativelanguage.googleapis.com/{versao}/models/"
-            f"{modelo}:generateContent?key={chave}"
-        )
-        try:
-            req = urllib.request.Request(
-                url, data=body,
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                data = _json_mod.loads(resp.read().decode("utf-8"))
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        except urllib.error.HTTPError as e:
-            corpo = e.read().decode("utf-8", errors="replace")[:200]
-            ultimo_erro = f"HTTP_{e.code} ({versao}/{modelo}): {corpo}"
-            if e.code == 429:
-                raise Exception(f"429: {corpo}")  # propaga imediatamente — sem tentar outros
-            continue
-        except Exception as e:
-            ultimo_erro = str(e)
-            if "429" in str(e):
-                raise  # propaga o 429
-            continue
-    raise Exception(ultimo_erro or "Todos os modelos Gemini falharam")
-
-
-def executar_tarefa_financeira(pergunta_usuario):
-    """
-    Pipeline Multi-LLM com fallback automático:
-    - Modo completo: GPT-4o-mini processa → Claude Sonnet analisa
-    - Fallback:      GPT-4o-mini faz tudo sozinho (quando Claude indisponível)
-    - Reativa automaticamente quando Claude voltar a ter créditos
-    """
-    if not OPENAI_API_KEY and not ANTHROPIC_API_KEY:
-        return "⚠ Nenhuma chave de API encontrada. Configure ANTHROPIC_API_KEY e OPENAI_API_KEY no arquivo .env"
-
-    ctx = _montar_contexto_carteira()
-
-    PROMPT_CONSULTOR = (
-        "Você é um consultor financeiro especializado no mercado brasileiro. "
-        "Analise os dados da carteira do usuário e responda de forma clara, "
-        "objetiva e personalizada em português. "
-        "Seja direto, use dados concretos da carteira e dê recomendações práticas. "
-        "Não invente dados — use apenas o que foi fornecido."
-    )
-
-    # ── Etapa 1: GPT-4o-mini processa os dados brutos ──
-    dados_processados = None
-    erro_gpt = None
-    if OPENAI_API_KEY:
-        try:
-            sys_gpt = (
-                "Você é um processador de dados financeiros. "
-                "Recebe dados de carteira em JSON e uma pergunta do usuário. "
-                "Retorne APENAS um JSON válido com os campos: "
-                "resumo_numerico (dict com métricas calculadas), "
-                "alertas (list de strings), "
-                "contexto_pergunta (string com dados relevantes para a pergunta)."
-            )
-            usr_gpt = (
-                f"Dados da carteira:\n{_json_mod.dumps(ctx, ensure_ascii=False, indent=2)}\n\n"
-                f"Pergunta do usuário: {pergunta_usuario}"
-            )
-            resposta_gpt = _chamar_gpt(sys_gpt, usr_gpt)
-            resposta_gpt_clean = resposta_gpt.strip()
-            if resposta_gpt_clean.startswith("```"):
-                resposta_gpt_clean = resposta_gpt_clean.split("\n", 1)[1].rsplit("```", 1)[0]
-            dados_processados = _json_mod.loads(resposta_gpt_clean)
-        except Exception as e:
-            erro_gpt = str(e)
-            dados_processados = {"dados_brutos": ctx}
-    else:
-        dados_processados = {"dados_brutos": ctx}
-
-    # ── Etapa 2: tenta Claude Sonnet ──
-    if ANTHROPIC_API_KEY:
-        sys_claude = PROMPT_CONSULTOR
-        usr_claude = (
-            f"Dados processados da carteira:\n{_json_mod.dumps(dados_processados, ensure_ascii=False, indent=2)}\n\n"
-            f"Pergunta do investidor: {pergunta_usuario}"
-        )
-        try:
-            resposta = _chamar_claude(sys_claude, usr_claude)
-            return resposta  # pipeline completo funcionou
-        except Exception as e:
-            erro_str = str(e)
-            # Verifica se é erro de saldo — faz fallback silencioso para GPT
-            eh_saldo = any(k in erro_str for k in ["credit", "billing", "balance", "quota", "429", "low"])
-            if not eh_saldo:
-                return f"⚠ Erro ao chamar Claude: {erro_str}"
-            # Saldo insuficiente — continua para GPT
-
-    # ── Fallback 1: GPT-4o-mini sozinho ──
-    if OPENAI_API_KEY:
-        try:
-            usr_gpt_final = (
-                f"Dados da carteira:\n{_json_mod.dumps(ctx, ensure_ascii=False, indent=2)}\n\n"
-                f"Pergunta do investidor: {pergunta_usuario}"
-            )
-            resposta = _chamar_gpt(PROMPT_CONSULTOR, usr_gpt_final)
-            return f"[GPT-4o-mini] {resposta}"
-        except Exception as e:
-            erro_gpt2 = str(e)
-            eh_saldo_gpt = any(k in erro_gpt2 for k in ["credit", "billing", "quota", "429", "insufficient"])
-            if not eh_saldo_gpt:
-                return f"⚠ Erro no GPT: {erro_gpt2}"
-            # Saldo insuficiente no GPT — tenta Gemini
-
-    # ── Fallback 2: Gemini 1.5 Flash (gratuito) ──
-    if GOOGLE_API_KEY:
-        # Garante que há dados válidos antes de enviar
-        ctx_limpo = {k: v for k, v in ctx.items() if v not in [None, [], {}]}
-        if not ctx_limpo:
-            ctx_limpo = {"aviso": "Carteira vazia — responda de forma genérica sobre investimentos."}
-        try:
-            usr_gemini = (
-                f"Dados da carteira:\n{_json_mod.dumps(ctx_limpo, ensure_ascii=False, indent=2)}\n\n"
-                f"Pergunta do investidor: {pergunta_usuario}"
-            )
-            resposta = _chamar_gemini(PROMPT_CONSULTOR, usr_gemini)
-            return f"[Gemini 1.5 Flash] {resposta}"
-        except Exception as e:
-            erro_str = str(e)
-            print(f"[Gemini] Erro detalhado: {erro_str}")
-            if "429" in erro_str or "quota" in erro_str.lower():
-                return "⏳ Limite do Gemini atingido (15 req/min gratuitas). Aguarde 1 minuto e tente novamente."
-            return f"⚠ Gemini indisponível: {erro_str[:150]}"
-
-    return "⚠ Nenhuma IA disponivel. Claude: console.anthropic.com | GPT: platform.openai.com | Gemini: verifique GOOGLE_API_KEY no .env"
+_exibir_resposta_assistente(
+    "👋 Pergunte algo sobre sua carteira, ou use uma das sugestões acima.\n\n"
+    "Esse assistente roda 100% localmente, sem custo e sem enviar seus dados "
+    "para nenhum serviço externo."
+)
 
 root.mainloop()

@@ -1,4 +1,4 @@
-# 📊 Dashboard de Investimentos
+# 📊 INvest
 
 > Plataforma desktop de análise de ações da B3 com IA consultora multi-LLM, carteira pessoal, histórico de patrimônio e simuladores financeiros.
 
@@ -22,6 +22,11 @@
 - Comparativo automático com o **CDI** do período
 - Indicador de tendência (↑ Alta / ↓ Queda / → Lateral)
 - Gráfico de evolução do patrimônio com linha de custo
+- Indicadores de risco avançados (Beta, Sharpe, Drawdown Máximo)
+- Comparativo Carteira vs Ibovespa vs CDI (Base 100)
+- Alertas automáticos (quedas/altas acentuadas, concentração setorial, abaixo do CDI)
+- Score de Diversificação
+- Resumo Executivo automático da carteira
 
 ### 🏦 CDBs na Carteira
 - Registro de investimentos em CDB com % do CDI
@@ -35,7 +40,7 @@
 - Base para gráficos de evolução histórica
 
 ### 🧠 Inteligência do Período
-- 9 insights automáticos: top performer, menor retorno, maior risco, mais estável, visão geral, tendências, score da carteira, comparativo CDI, concentração setorial e melhor mês
+- 10 insights automáticos: top performer, menor retorno, maior risco, mais estável, visão geral, tendências, score da carteira, comparativo CDI, concentração setorial e melhor mês
 
 ### 🤖 IA Consultora Multi-LLM
 Pipeline inteligente com **fallback automático** entre 3 IAs:
@@ -67,19 +72,19 @@ Gemini 1.5 Flash (Google) — gratuito
 
 ### Windows (instalação automática)
 ```bash
-git clone https://github.com/seuusuario/dashboard-investimentos.git
-cd dashboard-investimentos
+git clone https://github.com/seuusuario/INvest.git
+cd INvest
 setup.bat
 ```
 
 ### Manual
 ```bash
-git clone https://github.com/seuusuario/dashboard-investimentos.git
-cd dashboard-investimentos
+git clone https://github.com/seuusuario/INvest.git
+cd INvest
 pip install -r requirements.txt
 cp .env.example .env
 # Edite o .env com suas chaves de API
-python app-investimento.py
+python app_investimentos.py
 ```
 
 ---
@@ -101,16 +106,17 @@ GOOGLE_API_KEY=AIza...         # https://aistudio.google.com (gratuito)
 ## 📁 Estrutura do Projeto
 
 ```
-dashboard-investimentos/
-├── app-investimento.py     # Aplicação principal
+INvest/
+├── app_investimentos.py    # Aplicação principal
 ├── requirements.txt        # Dependências Python
 ├── setup.bat               # Instalador Windows
-├── .env.example            # Modelo de configuração
-├── .env                    # Suas chaves (não commitar!)
-├── .gitignore              # Ignora .env e dados locais
-├── carteira.json           # Carteira salva localmente (auto-gerado)
-├── carteira_cdbs.json      # CDBs salvos localmente (auto-gerado)
-└── historico.db            # Banco SQLite com histórico (auto-gerado)
+├── rodar.bat                # Atalho para iniciar a aplicação
+├── .env.example             # Modelo de configuração
+├── .env                      # Suas chaves (não commitar!)
+├── .gitignore                # Ignora .env e dados locais
+├── carteira.json             # Carteira salva localmente (auto-gerado)
+├── carteira_cdbs.json        # CDBs salvos localmente (auto-gerado)
+└── historico.db               # Banco SQLite com histórico (auto-gerado)
 ```
 
 ---
