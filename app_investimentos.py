@@ -210,6 +210,23 @@ class MascaraData:
 def nome_exibicao(ticker):
     return ticker.replace(".SA", "").upper()
 
+def _fmt_num_br(valor, casas=2, forcar_sinal=False):
+    """
+    Formata número no padrão BR: 1.234,56 (vírgula decimal, ponto de milhar —
+    inverso do :,.2f nativo do Python). Sem prefixo de moeda — usar em colunas
+    de tabela onde o cabeçalho já indica "(R$)". Com forcar_sinal=True, sempre
+    mostra + ou - na frente (útil para lucro/prejuízo).
+    """
+    sinal = "-" if valor < 0 else ("+" if forcar_sinal else "")
+    texto = f"{abs(valor):,.{casas}f}"
+    texto = texto.replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"{sinal}{texto}"
+
+def _fmt_brl(valor, casas=2, forcar_sinal=False):
+    """Formata valor em Real brasileiro com o prefixo, sinal antes do R$: -R$ 500,50 / +R$ 850,33."""
+    sinal = "-" if valor < 0 else ("+" if forcar_sinal else "")
+    return f"{sinal}R$ {_fmt_num_br(abs(valor), casas=casas)}"
+
 def limpar_entry_placeholder(entry, placeholder):
     if entry.get() == placeholder:
         entry.delete(0, tk.END)
@@ -456,7 +473,7 @@ def _montar_grafico(dados, selecionados, modo):
     ax.set_ylabel(ylabel, color=TXT)
 
     if modo == "preco":
-        ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"R$ {x:,.0f}"))
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: _fmt_brl(x)))
     else:
         ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x:.1f}"))
         ax.axhline(100, color="#444", linewidth=0.8, linestyle="--")
@@ -529,7 +546,7 @@ def _conectar_tooltip(fig, ax, canvas, series, modo):
 
         data_str = mdates.num2date(melhor_xd).strftime("%d/%m/%Y")
         val_str  = (f"{melhor_yd:.2f}" if modo == "base100"
-                    else f"R$ {melhor_yd:,.2f}")
+                    else _fmt_brl(melhor_yd))
 
         annot.set_text(
             f"  {nome_exibicao(melhor_ticker)}\n"
@@ -599,14 +616,14 @@ def _montar_tabela(dados, selecionados, frame_pai):
                 var_dia_txt = "—"; cor_var_dia = "#888888"
             valores = [
                 (nome_exibicao(ativo), cor_ativo),
-                (f"R$ {inicio:.2f}",   "#e0e0e0"),
-                (f"R$ {fim:.2f}",      "#e0e0e0"),
+                (_fmt_brl(inicio),     "#e0e0e0"),
+                (_fmt_brl(fim),        "#e0e0e0"),
                 (f"{retorno:+.2f}%",   cor_ret),
                 (var_dia_txt,          cor_var_dia),
                 (f"{vol:.2f}%",        "#e0e0e0"),
                 (risco_txt,            cor_risco),
-                (f"R$ {maximo:.2f}",   "#e0e0e0"),
-                (f"R$ {minimo:.2f}",   "#e0e0e0"),
+                (_fmt_brl(maximo),     "#e0e0e0"),
+                (_fmt_brl(minimo),     "#e0e0e0"),
             ]
             r = idx_a + 2   # +2 por causa do header e separador
             for c, (val, fg) in enumerate(valores):
@@ -871,8 +888,8 @@ def exportar_pdf():
                     f"{a['retorno']:+.2f}%",
                     f"{a['vol']:.2f}%",
                     _classificar_risco(a["vol"])[0],
-                    f"R$ {float(serie.max()):.2f}",
-                    f"R$ {float(serie.min()):.2f}",
+                    _fmt_brl(float(serie.max())),
+                    _fmt_brl(float(serie.min())),
                 ])
             except Exception:
                 pass
@@ -1268,13 +1285,13 @@ def _atualizar_label_moeda(sigla, preco, simbolo, cor, variacao):
     lbl_val, lbl_var = _labels_cotacao[sigla]
 
     if sigla == "BTC":
-        texto = f"R$ {preco:,.0f}"
+        texto = _fmt_brl(preco, casas=0)
     elif sigla in ("JPY", "CNY"):
-        texto = f"R$ {preco:.4f}"
+        texto = _fmt_brl(preco, casas=4)
     elif sigla == "BRL":
         texto = "R$ 1,00"
     else:
-        texto = f"R$ {preco:.4f}"
+        texto = _fmt_brl(preco, casas=4)
 
     lbl_val.config(text=texto, fg=cor)
 
@@ -1303,7 +1320,7 @@ def simular_cdb():
         final = valor * (1 + taxa) ** (dias / 365)
         lucro = final - valor
         resultado_cdb.config(
-            text=f"💰  Valor final: R$ {final:,.2f}   |   Lucro: R$ {lucro:,.2f}",
+            text=f"💰  Valor final: {_fmt_brl(final)}   |   Lucro: {_fmt_brl(lucro)}",
             fg="#00C896")
     except Exception:
         resultado_cdb.config(text="⚠  Preencha os campos com números válidos", fg="#FF5252")
@@ -1365,7 +1382,7 @@ def calcular_meta():
                 aporte = meta * taxa_mensal / ((1 + taxa_mensal) ** meses - 1)
 
             resultado_meta.config(
-                text=f"💸  Aporte mensal necessário: R$ {aporte:,.2f}",
+                text=f"💸  Aporte mensal necessário: {_fmt_brl(aporte)}",
                 fg="#00C896")
 
     except Exception:
@@ -2023,13 +2040,13 @@ def _renderizar_cdbs():
             except: pass
         dados_row = [
             (cdb["nome"],                "#e60000"),
-            (f"{cdb['valor']:,.2f}",     "#e0e0e0"),
+            (_fmt_num_br(cdb['valor']),   "#e0e0e0"),
             (f"{cdb['pct_cdi']:.0f}%",  "#e0e0e0"),
             (cdb["data"],                "#e0e0e0"),
             (venc,                       "#888888"),
             (str(dias),                  "#888888"),
-            (f"{rend:+,.2f}",            cor_rend),
-            (f"{total:,.2f}",            cor_rend),
+            (_fmt_num_br(rend, forcar_sinal=True), cor_rend),
+            (_fmt_num_br(total),          cor_rend),
             (f"{rent_pct:.2f}%",         cor_rend),
             (alerta_venc,                cor_alerta),
         ]
@@ -2055,10 +2072,10 @@ def _renderizar_cdbs():
     tot_row = sep_r + 1
     resumo = [
         ("TOTAL",                     "#e60000"),
-        (f"{total_aplicado:,.2f}",    "#e60000"),
+        (_fmt_num_br(total_aplicado), "#e60000"),
         ("", "#aaaaaa"), ("", "#aaaaaa"), ("", "#aaaaaa"), ("", "#aaaaaa"),
-        (f"{total_rendimento:+,.2f}", "#cc0000"),
-        (f"{total_atual:,.2f}",       "#cc0000"),
+        (_fmt_num_br(total_rendimento, forcar_sinal=True), "#cc0000"),
+        (_fmt_num_br(total_atual),    "#cc0000"),
         (f"{rent_total_pct:.2f}%",    "#cc0000"),
         ("", "#aaaaaa"), ("", ""),
     ]
@@ -2163,11 +2180,11 @@ def _grafico_evolucao_com_dados(dados, carteira, frame_pai):
         ax.plot(patrimonio_total.index, patrimonio_total.values, color=ACCENT, linewidth=2, label="Patrimônio")
         # Linha de custo total investido
         custo_total = sum(float(p["qtd"])*float(p["preco_medio"]) for p in carteira.values())
-        ax.axhline(custo_total, color="#FF9915", linewidth=1.2, linestyle="--", alpha=0.8, label=f"Custo R$ {custo_total:,.0f}")
+        ax.axhline(custo_total, color="#FF9915", linewidth=1.2, linestyle="--", alpha=0.8, label=f"Custo {_fmt_brl(custo_total, casas=0)}")
         leg = ax.legend(loc="upper left", frameon=False, fontsize=7)
         for t in leg.get_texts(): t.set_color("#FFF")
         ax.set_title("Evolução do Patrimônio", color=TXT, fontsize=10, fontweight="bold")
-        ax.yaxis.set_major_formatter(FuncFormatter(lambda x,_: f"R$ {x:,.0f}"))
+        ax.yaxis.set_major_formatter(FuncFormatter(lambda x,_: _fmt_brl(x, casas=0)))
         import matplotlib.dates as md3
         ax.xaxis.set_major_locator(md3.MonthLocator(interval=1))
         ax.xaxis.set_major_formatter(md3.DateFormatter("%b/%Y"))
@@ -2359,8 +2376,8 @@ def _gerar_resumo_executivo(rows, carteira):
     sinal = "positivo" if total_lucro>=0 else "negativo"
     resumo = (
         f"Sua carteira é composta por {len(rows)} ativo(s), com custo total de "
-        f"R$ {total_custo:,.2f} e patrimônio atual de R$ {total_patrim:,.2f}. "
-        f"O resultado acumulado é {sinal}: R$ {total_lucro:+,.2f} ({total_pct:+.2f}%). "
+        f"{_fmt_brl(total_custo)} e patrimônio atual de {_fmt_brl(total_patrim)}. "
+        f"O resultado acumulado é {sinal}: {_fmt_brl(total_lucro, forcar_sinal=True)} ({total_pct:+.2f}%). "
         f"O ativo com melhor desempenho é {melhor['nome']} ({melhor['lucro_pct']:+.2f}%) "
         f"e o que mais preocupa é {pior['nome']} ({pior['lucro_pct']:+.2f}%). "
         f"A carteira está {nivel_div} (score {score_div}/10)."
@@ -2665,11 +2682,11 @@ def _renderizar_carteira(precos):
             (nome_exibicao(r["ticker"]), CORES_ATIVOS[list(_carteira.keys()).index(r["ticker"]) % len(CORES_ATIVOS)]),
             (tend_txt,                   tend_cor),
             (f"{r['qtd']:.0f}",          "#e0e0e0"),
-            (f"{r['pm']:.2f}",           "#e0e0e0"),
-            (f"{r['preco_atual']:.2f}",  "#e0e0e0"),
-            (f"{r['custo']:,.2f}",       "#e0e0e0"),
-            (f"{r['patrimonio']:,.2f}",  "#e0e0e0"),
-            (f"{r['lucro_rs']:+,.2f}",   cor_ret),
+            (_fmt_num_br(r['pm']),           "#e0e0e0"),
+            (_fmt_num_br(r['preco_atual']),  "#e0e0e0"),
+            (_fmt_num_br(r['custo']),        "#e0e0e0"),
+            (_fmt_num_br(r['patrimonio']),   "#e0e0e0"),
+            (_fmt_num_br(r['lucro_rs'], forcar_sinal=True), cor_ret),
             (f"{r['lucro_pct']:+.2f}%",  cor_ret),
             (cdi_txt,                    "#aaaaaa"),
         ]
@@ -2698,9 +2715,9 @@ def _renderizar_carteira(precos):
     COR_VAZIO = "#1c1c1c"  # mesma cor do fundo = invisível
     resumo = [
         ("TOTAL","#e60000"),("",COR_VAZIO),("",COR_VAZIO),("",COR_VAZIO),("",COR_VAZIO),
-        (f"{total_custo:,.2f}","#e60000"),
-        (f"{total_patrim:,.2f}","#e60000"),
-        (f"{total_lucro:+,.2f}",cor_tot),
+        (_fmt_num_br(total_custo),"#e60000"),
+        (_fmt_num_br(total_patrim),"#e60000"),
+        (_fmt_num_br(total_lucro, forcar_sinal=True),cor_tot),
         (f"{total_pct:+.2f}%",cor_tot),
         ("",COR_VAZIO),("",COR_VAZIO),
     ]
@@ -3048,8 +3065,8 @@ def _responder_cdb():
         total_rend     += rend
     rent_pct = (total_rend / total_aplicado * 100) if total_aplicado > 0 else 0
     return (f"🏦 Você tem {len(_cdbs)} CDB(s) cadastrado(s), totalizando "
-            f"R$ {total_aplicado:,.2f} aplicados, com rendimento acumulado de "
-            f"R$ {total_rend:+,.2f} ({rent_pct:+.2f}%).")
+            f"{_fmt_brl(total_aplicado)} aplicados, com rendimento acumulado de "
+            f"{_fmt_brl(total_rend, forcar_sinal=True)} ({rent_pct:+.2f}%).")
 
 def _responder_indicadores():
     indicadores = _cache_analitico["indicadores"]
