@@ -19,6 +19,7 @@ import os
 import json
 import sqlite3
 import unicodedata
+import sys
 
 # ==============================
 # CONFIGURAÇÃO DE CORES
@@ -550,8 +551,8 @@ def _conectar_tooltip(fig, ax, canvas, series, modo):
 
         annot.set_text(
             f"  {nome_exibicao(melhor_ticker)}\n"
-            f"  📅 {data_str}\n"
-            f"  💰 {val_str}  "
+            f"  Data: {data_str}\n"
+            f"  Valor: {val_str}  "
         )
         annot.get_bbox_patch().set_facecolor(melhor_cor)
         annot.xy = (melhor_xd, melhor_yd)
@@ -798,7 +799,7 @@ def _melhor_mes(dados, selecionados):
                  else dados["Close"][ativo]).dropna()
             frames.append(s.pct_change().dropna())
 
-        carteira = pd.concat(frames, axis=1).mean(axis=1)
+        carteira = pd.concat(frames, axis=1, sort=False).mean(axis=1)
         mensais  = carteira.resample("ME").sum() * 100
         if mensais.empty:
             return None, None
@@ -1030,7 +1031,7 @@ def _gerar_insights_completo(analises, dados, selecionados, start_str, end_str):
     # 9. Melhor mês
     mes, ret_mes = _melhor_mes(dados, selecionados)
     if mes:
-        frases.append({"icone":"📅","titulo":"Melhor mês",
+        frases.append({"icone":"▸","titulo":"Melhor mês",
             "texto": f"O melhor mês da carteira foi {mes} com retorno médio de {ret_mes:+.2f}%.",
             "cor":"#FFD600"})
 
@@ -1320,7 +1321,7 @@ def simular_cdb():
         final = valor * (1 + taxa) ** (dias / 365)
         lucro = final - valor
         resultado_cdb.config(
-            text=f"💰  Valor final: {_fmt_brl(final)}   |   Lucro: {_fmt_brl(lucro)}",
+            text=f"▸  Valor final: {_fmt_brl(final)}   |   Lucro: {_fmt_brl(lucro)}",
             fg="#00C896")
     except Exception:
         resultado_cdb.config(text="⚠  Preencha os campos com números válidos", fg="#FF5252")
@@ -1401,9 +1402,31 @@ def _atualizar_label_modo(*args):
 # ==============================
 # JANELA PRINCIPAL
 # ==============================
+# Corrige interface borrada no Windows com escala de tela >100% (125%, 150% etc.).
+# Sem isso, o Windows "estica" a janela do Tkinter como bitmap em vez de
+# renderizar nativamente na resolução real — daí o efeito de texto borrado.
+# Só roda no Windows; em outros sistemas (Linux/Mac) o bloco é ignorado.
+if sys.platform == "win32":
+    try:
+        import ctypes
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)  # PROCESS_SYSTEM_DPI_AWARE
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()  # fallback p/ Windows mais antigos
+        except Exception:
+            pass  # se falhar, app continua funcionando — só sem a correção de DPI
+
 root = tk.Tk()
 root.title("INvest")
 root.geometry("1280x800")
+try:
+    # Sincroniza a escala do Tk com o DPI real da tela — complementa o
+    # SetProcessDpiAwareness acima, evitando texto pequeno demais em telas
+    # de alta resolução depois que o Windows para de "esticar" a janela.
+    _dpi_tela = root.winfo_fpixels("1i")
+    root.tk.call("tk", "scaling", _dpi_tela / 72.0)
+except Exception:
+    pass
 try:
     root.wm_iconname("📊")
 except Exception:
@@ -2095,7 +2118,7 @@ def _calcular_beta(serie_ativo, serie_ibov):
         import pandas as pd
         ret_a = serie_ativo.pct_change().dropna()
         ret_b = serie_ibov.pct_change().dropna()
-        df = pd.concat([ret_a, ret_b], axis=1).dropna()
+        df = pd.concat([ret_a, ret_b], axis=1, sort=False).dropna()
         if len(df) < 10: return None
         cov = df.iloc[:,0].cov(df.iloc[:,1])
         var = df.iloc[:,1].var()
