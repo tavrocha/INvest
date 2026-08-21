@@ -3,7 +3,7 @@
 > Plataforma desktop de análise de ações da B3 com IA consultora multi-LLM, carteira pessoal, histórico de patrimônio e simuladores financeiros.
 
 **Autor:** Vinícius Tavares Rocha  
-**Tecnologias:** Python · Tkinter · yFinance · Matplotlib · SQLite3 · Claude · GPT-4o · Gemini
+**Tecnologias:** Python · Tkinter · yFinance · Matplotlib · SQLite3 
 
 ---
 
@@ -43,20 +43,7 @@
 - 10 insights automáticos: top performer, menor retorno, maior risco, mais estável, visão geral, tendências, score da carteira, comparativo CDI, concentração setorial e melhor mês
 
 ### 🤖 IA Consultora Multi-LLM
-Pipeline inteligente com **fallback automático** entre 3 IAs:
-
-```
-Claude Sonnet (Anthropic)
-        ↓ sem crédito?
-GPT-4o-mini (OpenAI)
-        ↓ sem crédito?
-Gemini 1.5 Flash (Google) — gratuito
-```
-
-- **GPT-4o-mini** processa os dados brutos da carteira → JSON estruturado
-- **Claude Sonnet** analisa o JSON → resposta qualitativa personalizada
-- Sugestões rápidas de perguntas
-- Indicadores de status das chaves em tempo real
+Pipeline inteligente com **fallback automático** 
 
 ### 📐 Simuladores Financeiros
 - **Simulador de CDB** — calcula valor final e lucro dado valor, % CDI e dias
@@ -72,14 +59,14 @@ Gemini 1.5 Flash (Google) — gratuito
 
 ### Windows (instalação automática)
 ```bash
-git clone https://github.com/seuusuario/INvest.git
+git clone https://github.com/tavrocha/INvest.git
 cd INvest
 setup.bat
 ```
 
 ### Manual
 ```bash
-git clone https://github.com/seuusuario/INvest.git
+git clone https://github.com/tavrocha/INvest.git
 cd INvest
 pip install -r requirements.txt
 cp .env.example .env
