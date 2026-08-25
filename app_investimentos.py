@@ -236,7 +236,7 @@ def limpar_entry_placeholder(entry, placeholder):
 def restaurar_placeholder(entry, placeholder):
     if entry.get() == "":
         entry.insert(0, placeholder)
-        entry.config(fg="#888888")
+        entry.config(fg="#aaaaaa")
 
 def _normalizar_texto(txt):
     """Minúsculas, sem acentos, sem pontuação — facilita busca e casamento por palavras-chave."""
@@ -299,12 +299,12 @@ def _renderizar_resultados_busca(texto_busca=""):
         if ja_adicionado:
             nomes = ", ".join(a["ticker"] for a in ja_adicionado[:3])
             tk.Label(frame_resultados_busca, text=f"✔ {nomes} já está na sua lista.",
-                     bg=CARD, fg="#888888", font=("Arial", 8, "italic"), wraplength=190, justify="left"
+                     bg=CARD, fg="#aaaaaa", font=("Arial", 8, "italic"), wraplength=190, justify="left"
                      ).pack(anchor="w", padx=4, pady=(2, 4))
             return
 
         tk.Label(frame_resultados_busca, text="Nenhum resultado no catálogo.",
-                 bg=CARD, fg="#888888", font=("Arial", 8, "italic")
+                 bg=CARD, fg="#aaaaaa", font=("Arial", 8, "italic")
                  ).pack(anchor="w", padx=4, pady=(2, 0))
         texto_original = texto_busca.strip().upper()
         tk.Button(frame_resultados_busca, text=f"➕ Adicionar \"{texto_original}\" mesmo assim",
@@ -317,10 +317,10 @@ def _renderizar_resultados_busca(texto_busca=""):
         if not resultados:
             tk.Label(frame_resultados_busca,
                      text="✔ Todos os populares já estão na sua lista.\nBusque outro ativo acima.",
-                     bg=CARD, fg="#888888", font=("Arial", 7, "italic"), justify="left"
+                     bg=CARD, fg="#aaaaaa", font=("Arial", 7, "italic"), justify="left"
                      ).pack(anchor="w", padx=4, pady=(2, 4))
             return
-        tk.Label(frame_resultados_busca, text="⭐ Populares", bg=CARD, fg="#888888",
+        tk.Label(frame_resultados_busca, text="⭐ Populares", bg=CARD, fg="#aaaaaa",
                  font=("Arial", 7, "bold")).pack(anchor="w", padx=4, pady=(2, 0))
 
     for ativo in resultados:
@@ -347,7 +347,7 @@ def _adicionar_do_catalogo(ativo):
     ativos_ordem.append(ticker)
     _criar_checkbox(ticker, var)
     entry_busca_ativo.delete(0, tk.END)
-    label_status.config(text=f"✔ {ativo['ticker']} adicionado!", fg="#cc0000")
+    label_status.config(text=f"✔ {ativo['ticker']} adicionado!", fg=ACCENT)
     _renderizar_resultados_busca("")
 
 def _adicionar_ativo_manual(raw_text):
@@ -357,7 +357,7 @@ def _adicionar_ativo_manual(raw_text):
         return
     ticker = raw if raw.endswith(".SA") else raw + ".SA"
     if ticker in ativos_vars:
-        label_status.config(text=f"{nome_exibicao(ticker)} já está na lista.", fg="#e60000")
+        label_status.config(text=f"{nome_exibicao(ticker)} já está na lista.", fg=ACCENT)
         return
 
     label_status.config(text=f"Verificando {nome_exibicao(ticker)}...", fg="#aaaaaa")
@@ -382,7 +382,7 @@ def _pos_verificacao_manual(ticker, valido):
     ativos_ordem.append(ticker)
     _criar_checkbox(ticker, var)
     entry_busca_ativo.delete(0, tk.END)
-    label_status.config(text=f"✔ {nome_exibicao(ticker)} adicionado!", fg="#cc0000")
+    label_status.config(text=f"✔ {nome_exibicao(ticker)} adicionado!", fg=ACCENT)
     _renderizar_resultados_busca("")
 
 def _criar_checkbox(ticker, var):
@@ -398,7 +398,7 @@ def _criar_checkbox(ticker, var):
 
     tk.Checkbutton(
         row_frame, text=nome_exibicao(ticker), variable=var,
-        bg=CARD, fg=TXT, selectcolor="#2e2e2e",
+        bg=CARD, fg=TXT, selectcolor=BTN,
         activebackground=CARD, activeforeground=TXT,
         font=("Arial", 9), cursor="hand2"
     ).pack(side="left")
@@ -431,7 +431,7 @@ def _montar_grafico(dados, selecionados, modo):
     ax.set_facecolor(BG)
 
     ax_leg = fig.add_axes([0.77, 0.05, 0.22, 0.90])
-    ax_leg.set_facecolor("#1c1c1c")
+    ax_leg.set_facecolor(CARD)
     ax_leg.set_xticks([]); ax_leg.set_yticks([])
     for spine in ax_leg.spines.values():
         spine.set_edgecolor(ACCENT); spine.set_linewidth(1.2)
@@ -578,17 +578,17 @@ def _montar_tabela(dados, selecionados, frame_pai):
     larguras = [80, 85, 85, 85, 75, 85, 70, 85, 85]
 
     # Frame mestre com grid
-    tbl = tk.Frame(frame_pai, bg="#1c1c1c")
+    tbl = tk.Frame(frame_pai, bg=CARD)
     tbl.pack(fill="x", padx=8)
 
     # Cabeçalho
     for c, (col, w) in enumerate(zip(colunas, larguras)):
-        tk.Label(tbl, text=col, bg="#1c1c1c", fg=ACCENT,
+        tk.Label(tbl, text=col, bg=CARD, fg=ACCENT,
                  font=("Arial", 8, "bold"), width=w//8,
                  anchor="center").grid(row=0, column=c, padx=1, pady=3, sticky="ew")
 
     # Separador
-    sep = tk.Frame(tbl, bg="#2e2e2e", height=1)
+    sep = tk.Frame(tbl, bg=BTN, height=1)
     sep.grid(row=1, column=0, columnspan=len(colunas), sticky="ew", pady=0)
 
     # Linhas de dados
@@ -614,17 +614,17 @@ def _montar_tabela(dados, selecionados, frame_pai):
                 var_dia_txt = f"{var_dia:+.2f}%"
                 cor_var_dia = "#00C896" if var_dia >= 0 else "#FF5252"
             else:
-                var_dia_txt = "—"; cor_var_dia = "#888888"
+                var_dia_txt = "—"; cor_var_dia = "#aaaaaa"
             valores = [
                 (nome_exibicao(ativo), cor_ativo),
-                (_fmt_brl(inicio),     "#e0e0e0"),
-                (_fmt_brl(fim),        "#e0e0e0"),
+                (_fmt_brl(inicio),     TXT),
+                (_fmt_brl(fim),        TXT),
                 (f"{retorno:+.2f}%",   cor_ret),
                 (var_dia_txt,          cor_var_dia),
-                (f"{vol:.2f}%",        "#e0e0e0"),
+                (f"{vol:.2f}%",        TXT),
                 (risco_txt,            cor_risco),
-                (_fmt_brl(maximo),     "#e0e0e0"),
-                (_fmt_brl(minimo),     "#e0e0e0"),
+                (_fmt_brl(maximo),     TXT),
+                (_fmt_brl(minimo),     TXT),
             ]
             r = idx_a + 2   # +2 por causa do header e separador
             for c, (val, fg) in enumerate(valores):
@@ -713,7 +713,7 @@ SETORES = {
 CDI_ANUAL = 0.1065
 
 # ==============================
-# 5. ALERTA DE TENDÊNCIA
+# 5. "#FFD600" DE TENDÊNCIA
 # ==============================
 def _tendencia_ativo(serie):
     """
@@ -721,16 +721,16 @@ def _tendencia_ativo(serie):
     Retorna ('Alta', cor) / ('Queda', cor) / ('Lateral', cor)
     """
     if len(serie) < 20:
-        return ("N/D", "#888888")
+        return ("N/D", "#aaaaaa")
     mm20_atual = serie.rolling(20).mean().iloc[-1]
     preco_atual = serie.iloc[-1]
     diff = (preco_atual - mm20_atual) / mm20_atual * 100
     if diff > 1.5:
-        return ("↑ Alta",   "#cc0000")
+        return ("↑ Alta",   ACCENT)
     elif diff < -1.5:
         return ("↓ Queda",  "#FF5252")
     else:
-        return ("→ Lateral","#e60000")
+        return ("→ Lateral",ACCENT)
 
 # ==============================
 # 6. SCORE GERAL DA CARTEIRA (0–10)
@@ -897,15 +897,15 @@ def exportar_pdf():
 
         tbl = Table(rows, colWidths=[3*cm,2.5*cm,2.5*cm,2*cm,3*cm,3*cm])
         tbl.setStyle(TableStyle([
-            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#1c1c1c")),
-            ("TEXTCOLOR",  (0,0), (-1,0), colors.HexColor("#cc0000")),
+            ("BACKGROUND", (0,0), (-1,0), colors.HexColor(CARD)),
+            ("TEXTCOLOR",  (0,0), (-1,0), colors.HexColor(ACCENT)),
             ("FONTNAME",   (0,0), (-1,0), "Helvetica-Bold"),
             ("FONTSIZE",   (0,0), (-1,-1), 8),
             ("ALIGN",      (0,0), (-1,-1), "CENTER"),
             ("ROWBACKGROUNDS", (0,1), (-1,-1),
              [colors.HexColor("#161616"), colors.HexColor("#202020")]),
             ("TEXTCOLOR",  (0,1), (-1,-1), colors.white),
-            ("GRID",       (0,0), (-1,-1), 0.3, colors.HexColor("#2e2e2e")),
+            ("GRID",       (0,0), (-1,-1), 0.3, colors.HexColor(BTN)),
             ("TOPPADDING", (0,0), (-1,-1), 4),
             ("BOTTOMPADDING",(0,0),(-1,-1),4),
         ]))
@@ -925,14 +925,14 @@ def exportar_pdf():
             story.append(Paragraph(f"• {f['titulo']}: {f['texto']}", body_style))
 
         doc.build(story)
-        btn_pdf.config(text="✔ PDF Salvo!", fg="#cc0000")
+        btn_pdf.config(text="✔ PDF Salvo!", fg=ACCENT)
         root.after(3000, lambda: btn_pdf.config(text="📄 Exportar PDF", fg=TXT))
 
     except ImportError:
         # reportlab não instalado
         import subprocess, sys
         subprocess.run([sys.executable, "-m", "pip", "install", "reportlab", "--quiet"])
-        btn_pdf.config(text="Instalando... tente novamente", fg="#e60000")
+        btn_pdf.config(text="Instalando... tente novamente", fg=ACCENT)
         root.after(4000, lambda: btn_pdf.config(text="📄 Exportar PDF", fg=TXT))
     except Exception as e:
         btn_pdf.config(text=f"⚠ Erro", fg="#FF5252")
@@ -1026,7 +1026,7 @@ def _gerar_insights_completo(analises, dados, selecionados, start_str, end_str):
     if alertas:
         frases.append({"icone":"⚡","titulo":"Concentração setorial",
             "texto": "Atenção: " + "; ".join(alertas) + ". Considere diversificar.",
-            "cor":"#FF9915"})
+            "cor":"#FFD600"})
 
     # 9. Melhor mês
     mes, ret_mes = _melhor_mes(dados, selecionados)
@@ -1055,7 +1055,7 @@ def _desenhar_score_bar(parent, score, cor):
 
     # Fundo
     c.create_rectangle(0, 0, BAR_W, BAR_H,
-                        fill="#2e2e2e", outline="")
+                        fill=BTN, outline="")
     # Preenchimento proporcional
     fill_w = int((score / 10) * BAR_W)
     if fill_w > 0:
@@ -1073,7 +1073,7 @@ def _montar_insights(analises, frame_pai):
 
     if not frases:
         tk.Label(frame_pai, text="📈  Gere um gráfico para ver os insights da carteira.",
-                 bg="#202020", fg="#cc0000", font=("Arial", 9, "italic"),
+                 bg="#202020", fg=ACCENT, font=("Arial", 9, "italic"),
                  pady=14).pack()
         return
 
@@ -1102,7 +1102,7 @@ def _montar_insights(analises, frame_pai):
             except Exception:
                 pass
 
-        tk.Label(col, text=f["texto"], bg="#202020", fg="#e0e0e0",
+        tk.Label(col, text=f["texto"], bg="#202020", fg=TXT,
                  font=("Arial", 8), anchor="w", wraplength=780).pack(fill="x")
 
 
@@ -1161,7 +1161,7 @@ def exportar_png():
     if caminho:
         fig.savefig(caminho, dpi=150, bbox_inches="tight",
                     facecolor=BG, edgecolor="none")
-        btn_exportar.config(text="✔ Salvo!", fg="#cc0000")
+        btn_exportar.config(text="✔ Salvo!", fg=ACCENT)
         root.after(2500, lambda: btn_exportar.config(text="📥 Exportar PNG", fg=TXT))
 
 
@@ -1207,7 +1207,7 @@ def gerar_grafico():
     if not selecionados:
         for w in frame_grafico.winfo_children(): w.destroy()
         tk.Label(frame_grafico, text="Selecione ao menos um ativo.",
-                 fg="#e60000", bg=CARD).pack(pady=20); return
+                 fg=ACCENT, bg=CARD).pack(pady=20); return
 
     # Mostra loading e desabilita botão
     estado_load = _mostrar_loading()
@@ -1245,15 +1245,15 @@ def _pos_download(dados, selecionados, estado_load, start, end):
 # ==============================
 MOEDAS = [
     ("BTC",  "BTC-USD",  "₿",  "#F7931A"),
-    ("USD",  "USDBRL=X", "$",  "#cc0000"),
+    ("USD",  "USDBRL=X", "$",  ACCENT),
     ("EUR",  "EURBRL=X", "€",  "#448AFF"),
     ("GBP",  "GBPBRL=X", "£",  "#E040FB"),
     ("JPY",  "JPYBRL=X", "¥",  "#FF4081"),
     ("CHF",  "CHFBRL=X", "₣",  "#FFFFFF"),
     ("CNY",  "CNYBRL=X", "¥",  "#FF1744"),
-    ("AUD",  "AUDBRL=X", "A$", "#e60000"),
-    ("CAD",  "CADBRL=X", "C$", "#FF9915"),
-    ("BRL",  None,        "R$", "#cc0000"),  # referência fixa
+    ("AUD",  "AUDBRL=X", "A$", ACCENT),
+    ("CAD",  "CADBRL=X", "C$", "#FFD600"),
+    ("BRL",  None,        "R$", ACCENT),  # referência fixa
 ]
 
 # Guarda os Labels para atualizar
@@ -1470,7 +1470,7 @@ frame_lista_ativos.bind("<Configure>",
 canvas_scroll.bind_all("<MouseWheel>",
     lambda e: canvas_scroll.yview_scroll(int(-1*(e.delta/120)), "units"))
 
-tk.Frame(frame_sidebar, bg="#2e2e2e", height=1).pack(fill="x", padx=6, pady=6)
+tk.Frame(frame_sidebar, bg=BTN, height=1).pack(fill="x", padx=6, pady=6)
 tk.Label(frame_sidebar, text="🔍 Buscar ativo:", bg=CARD, fg="#aaaaaa",
          font=("Arial", 8)).pack(padx=6, anchor="w")
 
@@ -1479,7 +1479,7 @@ PLACEHOLDER_BUSCA = "ex: MXRF11, Vale, BOVA11..."
 frame_busca_ativo = tk.Frame(frame_sidebar, bg=CARD)
 frame_busca_ativo.pack(fill="x", padx=6, pady=(2, 0))
 
-entry_busca_ativo = tk.Entry(frame_busca_ativo, bg=BTN, fg="#888888",
+entry_busca_ativo = tk.Entry(frame_busca_ativo, bg=BTN, fg="#aaaaaa",
                               insertbackground=TXT, font=("Arial", 9))
 entry_busca_ativo.insert(0, PLACEHOLDER_BUSCA)
 entry_busca_ativo.bind("<FocusIn>", lambda e: (
@@ -1493,7 +1493,7 @@ entry_busca_ativo.pack(fill="x")
 frame_resultados_busca = tk.Frame(frame_sidebar, bg=CARD)
 frame_resultados_busca.pack(fill="x", padx=2, pady=(4, 0))
 
-label_status = tk.Label(frame_sidebar, text="", bg=CARD, fg="#cc0000",
+label_status = tk.Label(frame_sidebar, text="", bg=CARD, fg=ACCENT,
                          font=("Arial", 8), wraplength=160)
 label_status.pack(padx=6, pady=4)
 
@@ -1501,7 +1501,7 @@ label_status.pack(padx=6, pady=4)
 _renderizar_resultados_busca("")
 
 # ── PAINEL DE COTAÇÕES ──
-tk.Frame(frame_sidebar, bg="#2e2e2e", height=1).pack(fill="x", padx=6, pady=(4, 0))
+tk.Frame(frame_sidebar, bg=BTN, height=1).pack(fill="x", padx=6, pady=(4, 0))
 
 frame_cab_cotacao = tk.Frame(frame_sidebar, bg=CARD)
 frame_cab_cotacao.pack(fill="x", padx=6, pady=(4, 2))
@@ -1569,7 +1569,7 @@ _scroll_canvas.bind_all("<MouseWheel>",
 # Data início
 tk.Label(frame_topo, text="Data início", bg=BG, fg=TXT,
          font=("Arial", 9)).pack(side="left", padx=(0, 4))
-entry_inicio = tk.Entry(frame_topo, width=12, bg=BTN, fg="#888888",
+entry_inicio = tk.Entry(frame_topo, width=12, bg=BTN, fg="#aaaaaa",
                         insertbackground=TXT, font=("Arial", 9))
 entry_inicio.insert(0, "DD/MM/AAAA")
 entry_inicio.bind("<FocusIn>",  lambda e: limpar_entry_placeholder(entry_inicio, "DD/MM/AAAA"))
@@ -1580,7 +1580,7 @@ mascara_inicio = MascaraData(entry_inicio)
 # Data fim
 tk.Label(frame_topo, text="Data fim", bg=BG, fg=TXT,
          font=("Arial", 9)).pack(side="left", padx=(12, 4))
-entry_fim = tk.Entry(frame_topo, width=12, bg=BTN, fg="#888888",
+entry_fim = tk.Entry(frame_topo, width=12, bg=BTN, fg="#aaaaaa",
                      insertbackground=TXT, font=("Arial", 9))
 entry_fim.insert(0, "DD/MM/AAAA")
 entry_fim.bind("<FocusIn>",  lambda e: limpar_entry_placeholder(entry_fim, "DD/MM/AAAA"))
@@ -1634,18 +1634,18 @@ frame_grafico = tk.Frame(frame_conteudo, bg=CARD)
 frame_grafico.pack(fill="both", expand=True)
 
 # -- TABELA DE ANÁLISE --
-frame_tabela_outer = tk.Frame(frame_conteudo, bg="#1c1c1c")
+frame_tabela_outer = tk.Frame(frame_conteudo, bg=CARD)
 frame_tabela_outer.pack(fill="x", pady=(4, 0))
 
 tk.Label(frame_tabela_outer, text="📊  Análise do Período",
-         bg="#1c1c1c", fg=ACCENT, font=("Arial", 9, "bold"),
+         bg=CARD, fg=ACCENT, font=("Arial", 9, "bold"),
          pady=4).pack(anchor="w", padx=8)
 
-frame_tabela = tk.Frame(frame_tabela_outer, bg="#1c1c1c")
+frame_tabela = tk.Frame(frame_tabela_outer, bg=CARD)
 frame_tabela.pack(fill="x", padx=4, pady=(0, 4))
 
 # -- CARD DE INSIGHTS --
-frame_insights_outer = tk.Frame(frame_conteudo, bg="#cc0000")
+frame_insights_outer = tk.Frame(frame_conteudo, bg=ACCENT)
 frame_insights_outer.pack(fill="x", pady=(6, 0))
 
 frame_insights_inner = tk.Frame(frame_insights_outer, bg="#202020")
@@ -1653,7 +1653,7 @@ frame_insights_inner.pack(fill="both", expand=True, padx=2, pady=2)
 
 cab_ins = tk.Frame(frame_insights_inner, bg="#0d0d0d")
 cab_ins.pack(fill="x")
-tk.Label(cab_ins, text="🧠  Inteligência do Período", bg="#0d0d0d", fg="#cc0000",
+tk.Label(cab_ins, text="🧠  Inteligência do Período", bg="#0d0d0d", fg=ACCENT,
          font=("Arial", 10, "bold"), pady=6).pack(side="left", padx=12)
 
 frame_insights = tk.Frame(frame_insights_inner, bg="#202020")
@@ -1713,12 +1713,12 @@ tk.Button(col4, text=" Simular ", bg=ACCENT, fg="#000000",
           font=("Arial", 9, "bold"), relief="flat", cursor="hand2",
           command=simular_cdb).pack()
 
-resultado_cdb = tk.Label(frame_cdb, text="", bg=CDB_BG, fg="#cc0000",
+resultado_cdb = tk.Label(frame_cdb, text="", bg=CDB_BG, fg=ACCENT,
                           font=("Arial", 10, "bold"), pady=5)
 resultado_cdb.pack()
 
 # ── CARD DIREITO: Calculadora de Meta ──
-frame_meta_outer = tk.Frame(frame_cards, bg="#e60000")
+frame_meta_outer = tk.Frame(frame_cards, bg=ACCENT)
 frame_meta_outer.pack(side="left", fill="both", expand=True, padx=(5, 0))
 
 META_BG = "#1a1a0a"
@@ -1727,7 +1727,7 @@ frame_meta.pack(fill="both", expand=True, padx=2, pady=2)
 
 cab_meta = tk.Frame(frame_meta, bg="#2a2a00")
 cab_meta.pack(fill="x")
-tk.Label(cab_meta, text="🎯  Calculadora de Meta", bg="#2a2a00", fg="#e60000",
+tk.Label(cab_meta, text="🎯  Calculadora de Meta", bg="#2a2a00", fg=ACCENT,
          font=("Arial", 10, "bold"), pady=6).pack(side="left", padx=10)
 
 # Modo: calcular prazo OU calcular aporte
@@ -1781,11 +1781,11 @@ entry_aporte_ou_prazo.pack()
 # Botão
 m4 = tk.Frame(linha_meta, bg=META_BG); m4.pack(side="left", padx=8)
 make_label_meta(m4, " ")
-tk.Button(m4, text=" Calcular ", bg="#e60000", fg="#161616",
+tk.Button(m4, text=" Calcular ", bg=ACCENT, fg="#161616",
           font=("Arial", 9, "bold"), relief="flat", cursor="hand2",
           command=calcular_meta).pack()
 
-resultado_meta = tk.Label(frame_meta, text="", bg=META_BG, fg="#cc0000",
+resultado_meta = tk.Label(frame_meta, text="", bg=META_BG, fg=ACCENT,
                            font=("Arial", 10, "bold"), pady=5)
 resultado_meta.pack()
 
@@ -2000,7 +2000,7 @@ def _adicionar_cdb():
     venc_val = venc_s if (venc_s and venc_s != "DD/MM/AAAA") else "—"
     _cdbs.append({"nome": nome_s, "valor": valor, "pct_cdi": pct, "data": data_s, "vencimento": venc_val})
     _salvar_cdbs(_cdbs)
-    lbl_cdb_status.config(text=f"✔ CDB '{nome_s}' adicionado!", fg="#cc0000")
+    lbl_cdb_status.config(text=f"✔ CDB '{nome_s}' adicionado!", fg=ACCENT)
     _renderizar_cdbs()
 
 def _remover_cdb(idx):
@@ -2016,10 +2016,10 @@ def _renderizar_cdbs():
     if not _cdbs:
         tk.Label(frame_cdb_cart_tabela,
                  text="Nenhum CDB registrado. Adicione acima.",
-                 bg="#161616", fg="#cc0000", font=("Arial", 9, "italic"), pady=10).pack()
+                 bg="#161616", fg=ACCENT, font=("Arial", 9, "italic"), pady=10).pack()
         return
 
-    CAB_BG = "#1c1c1c"
+    CAB_BG = CARD
     cols   = ["Nome/Banco", "Aplicado (R$)", "% CDI", "Data", "Vencimento", "Dias", "Rendimento R$", "Total R$", "Rent. %", "Alerta", "Ação"]
     widths = [12, 10, 5, 10, 10, 5, 12, 10, 7, 7, 5]
 
@@ -2027,11 +2027,11 @@ def _renderizar_cdbs():
     tbl.pack(fill="x", padx=6)
 
     for c, (col, w) in enumerate(zip(cols, widths)):
-        tk.Label(tbl, text=col, bg=CAB_BG, fg="#e60000",
+        tk.Label(tbl, text=col, bg=CAB_BG, fg=ACCENT,
                  font=("Arial", 8, "bold"), width=w,
                  anchor="center").grid(row=0, column=c, padx=1, pady=3, sticky="ew")
 
-    tk.Frame(tbl, bg="#2e2e2e", height=1).grid(
+    tk.Frame(tbl, bg=BTN, height=1).grid(
         row=1, column=0, columnspan=len(cols), sticky="ew")
 
     total_aplicado = total_rendimento = total_atual = 0
@@ -2047,7 +2047,7 @@ def _renderizar_cdbs():
         # Alerta de vencimento
         venc = cdb.get("vencimento", "—")
         alerta_venc = ""
-        cor_alerta  = "#888888"
+        cor_alerta  = "#aaaaaa"
         if venc and venc != "—":
             try:
                 dv = datetime.strptime(venc, "%d/%m/%Y")
@@ -2055,19 +2055,19 @@ def _renderizar_cdbs():
                 if dias_venc < 0:
                     alerta_venc = "VENCIDO"; cor_alerta = "#FF5252"
                 elif dias_venc <= 30:
-                    alerta_venc = f"{dias_venc}d ⚠"; cor_alerta = "#FF9915"
+                    alerta_venc = f"{dias_venc}d ⚠"; cor_alerta = "#FFD600"
                 elif dias_venc <= 90:
-                    alerta_venc = f"{dias_venc}d"; cor_alerta = "#e60000"
+                    alerta_venc = f"{dias_venc}d"; cor_alerta = ACCENT
                 else:
-                    alerta_venc = f"{dias_venc}d"; cor_alerta = "#cc0000"
+                    alerta_venc = f"{dias_venc}d"; cor_alerta = ACCENT
             except: pass
         dados_row = [
-            (cdb["nome"],                "#e60000"),
-            (_fmt_num_br(cdb['valor']),   "#e0e0e0"),
-            (f"{cdb['pct_cdi']:.0f}%",  "#e0e0e0"),
-            (cdb["data"],                "#e0e0e0"),
-            (venc,                       "#888888"),
-            (str(dias),                  "#888888"),
+            (cdb["nome"],                ACCENT),
+            (_fmt_num_br(cdb['valor']),   TXT),
+            (f"{cdb['pct_cdi']:.0f}%",  TXT),
+            (cdb["data"],                TXT),
+            (venc,                       "#aaaaaa"),
+            (str(dias),                  "#aaaaaa"),
             (_fmt_num_br(rend, forcar_sinal=True), cor_rend),
             (_fmt_num_br(total),          cor_rend),
             (f"{rent_pct:.2f}%",         cor_rend),
@@ -2090,20 +2090,20 @@ def _renderizar_cdbs():
     # Linha de totais
     rent_total_pct = (total_rendimento / total_aplicado * 100) if total_aplicado > 0 else 0
     sep_r = len(_cdbs) + 2
-    tk.Frame(tbl, bg="#2e2e2e", height=1).grid(
+    tk.Frame(tbl, bg=BTN, height=1).grid(
         row=sep_r, column=0, columnspan=len(cols), sticky="ew", pady=2)
     tot_row = sep_r + 1
     resumo = [
-        ("TOTAL",                     "#e60000"),
-        (_fmt_num_br(total_aplicado), "#e60000"),
+        ("TOTAL",                     ACCENT),
+        (_fmt_num_br(total_aplicado), ACCENT),
         ("", "#aaaaaa"), ("", "#aaaaaa"), ("", "#aaaaaa"), ("", "#aaaaaa"),
-        (_fmt_num_br(total_rendimento, forcar_sinal=True), "#cc0000"),
-        (_fmt_num_br(total_atual),    "#cc0000"),
-        (f"{rent_total_pct:.2f}%",    "#cc0000"),
+        (_fmt_num_br(total_rendimento, forcar_sinal=True), ACCENT),
+        (_fmt_num_br(total_atual),    ACCENT),
+        (f"{rent_total_pct:.2f}%",    ACCENT),
         ("", "#aaaaaa"), ("", ""),
     ]
     for c, (val, fg) in enumerate(resumo):
-        tk.Label(tbl, text=val, bg="#1c1c1c", fg=fg,
+        tk.Label(tbl, text=val, bg=CARD, fg=fg,
                  font=("Arial", 8, "bold"), width=widths[c],
                  anchor="center").grid(row=tot_row, column=c, padx=1, pady=3, sticky="ew")
 
@@ -2197,13 +2197,13 @@ def _grafico_evolucao_com_dados(dados, carteira, frame_pai):
             except: pass
         if patrimonio_total.empty:
             return
-        fig = plt.figure(figsize=(11, 3.0)); fig.patch.set_facecolor("#111111")
+        fig = plt.figure(figsize=(11, 3.0)); fig.patch.set_facecolor(BG)
         ax  = fig.add_axes([0.07, 0.20, 0.88, 0.70]); ax.set_facecolor("#161616")
         ax.fill_between(patrimonio_total.index, patrimonio_total.values, alpha=0.2, color=ACCENT)
         ax.plot(patrimonio_total.index, patrimonio_total.values, color=ACCENT, linewidth=2, label="Patrimônio")
         # Linha de custo total investido
         custo_total = sum(float(p["qtd"])*float(p["preco_medio"]) for p in carteira.values())
-        ax.axhline(custo_total, color="#FF9915", linewidth=1.2, linestyle="--", alpha=0.8, label=f"Custo {_fmt_brl(custo_total, casas=0)}")
+        ax.axhline(custo_total, color="#FFD600", linewidth=1.2, linestyle="--", alpha=0.8, label=f"Custo {_fmt_brl(custo_total, casas=0)}")
         leg = ax.legend(loc="upper left", frameon=False, fontsize=7)
         for t in leg.get_texts(): t.set_color("#FFF")
         ax.set_title("Evolução do Patrimônio", color=TXT, fontsize=10, fontweight="bold")
@@ -2224,14 +2224,14 @@ def _renderizar_tabela_risco(indicadores, frame_pai):
     for w in frame_pai.winfo_children(): w.destroy()
     if not indicadores:
         tk.Label(frame_pai, text="Não foi possível calcular indicadores.",
-                 bg="#161616", fg="#cc0000", font=("Arial", 8, "italic"), pady=8).pack()
+                 bg="#161616", fg=ACCENT, font=("Arial", 8, "italic"), pady=8).pack()
         return
-    CAB_BG = "#1c1c1c"
+    CAB_BG = CARD
     cols   = ["Ativo", "Beta", "Sharpe", "Drawdown Máx."]
     widths = [10, 8, 8, 14]
     tbl = tk.Frame(frame_pai, bg=CAB_BG); tbl.pack(fill="x", padx=6)
     for c,(col,w) in enumerate(zip(cols,widths)):
-        tk.Label(tbl, text=col, bg=CAB_BG, fg="#cc0000",
+        tk.Label(tbl, text=col, bg=CAB_BG, fg=ACCENT,
                  font=("Arial",8,"bold"), width=w,
                  anchor="center").grid(row=0,column=c,padx=1,pady=3,sticky="ew")
     tk.Frame(tbl, bg="#2a1a2a", height=1).grid(row=1,column=0,columnspan=4,sticky="ew")
@@ -2241,10 +2241,10 @@ def _renderizar_tabela_risco(indicadores, frame_pai):
         beta_s = f"{ind['beta']:.2f}"  if ind['beta']    is not None else "N/D"
         shar_s = f"{ind['sharpe']:.2f}" if ind['sharpe'] is not None else "N/D"
         dd_s   = f"{ind['drawdown']:.1f}%" if ind['drawdown'] is not None else "N/D"
-        cor_beta  = "#cc0000" if ind['beta'] is not None and ind['beta']<1 else "#FF5252" if ind['beta'] is not None else "#888"
-        cor_sharp = "#cc0000" if ind['sharpe'] is not None and ind['sharpe']>0 else "#FF5252" if ind['sharpe'] is not None else "#888"
-        cor_dd    = "#e60000" if ind['drawdown'] is not None and ind['drawdown']>-15 else "#FF5252" if ind['drawdown'] is not None else "#888"
-        dados_row = [(nome_exibicao(ticker),"#e0e0e0"),(beta_s,cor_beta),(shar_s,cor_sharp),(dd_s,cor_dd)]
+        cor_beta  = ACCENT if ind['beta'] is not None and ind['beta']<1 else "#FF5252" if ind['beta'] is not None else "#888"
+        cor_sharp = ACCENT if ind['sharpe'] is not None and ind['sharpe']>0 else "#FF5252" if ind['sharpe'] is not None else "#888"
+        cor_dd    = ACCENT if ind['drawdown'] is not None and ind['drawdown']>-15 else "#FF5252" if ind['drawdown'] is not None else "#888"
+        dados_row = [(nome_exibicao(ticker),TXT),(beta_s,cor_beta),(shar_s,cor_sharp),(dd_s,cor_dd)]
         for c,(val,fg) in enumerate(dados_row):
             tk.Label(tbl,text=val,bg=row_bg,fg=fg,
                      font=("Arial",8),width=widths[c],
@@ -2253,13 +2253,13 @@ def _renderizar_tabela_risco(indicadores, frame_pai):
     # Legenda
     leg = tk.Frame(frame_pai, bg="#161616"); leg.pack(fill="x", padx=8, pady=4)
     tk.Label(leg, text="Beta<1 = menos volátil que o mercado  |  Sharpe>0 = retorno acima do risco  |  Drawdown = maior queda do pico",
-             bg="#161616", fg="#cc0000", font=("Arial", 7), anchor="w").pack(fill="x")
+             bg="#161616", fg=ACCENT, font=("Arial", 7), anchor="w").pack(fill="x")
 
 # ── 7. Comparativo com Benchmarks ──
 def _renderizar_benchmark(dados, ibov, carteira, frame_pai, start, end):
     import pandas as pd, numpy as np
     for w in frame_pai.winfo_children(): w.destroy()
-    fig = plt.figure(figsize=(11, 3.0)); fig.patch.set_facecolor("#111111")
+    fig = plt.figure(figsize=(11, 3.0)); fig.patch.set_facecolor(BG)
     ax  = fig.add_axes([0.07, 0.20, 0.88, 0.70]); ax.set_facecolor("#161616")
     tickers = list(carteira.keys())
     # Carteira ponderada por custo
@@ -2277,13 +2277,13 @@ def _renderizar_benchmark(dados, ibov, carteira, frame_pai, start, end):
     # Ibovespa
     if not ibov.empty:
         s = ibov["Close"].dropna(); s = (s/s.iloc[0])*100
-        ax.plot(s.index, s.values, color="#888888", linewidth=1.5, linestyle="--", label="IBOV")
+        ax.plot(s.index, s.values, color="#aaaaaa", linewidth=1.5, linestyle="--", label="IBOV")
     # CDI sintético
     try:
         datas_cdi = pd.date_range(start, end, freq="B")
         td = (1+CDI_ANUAL)**(1/252)-1
         cdi_vals = 100*np.cumprod([1+td]*len(datas_cdi))
-        ax.plot(datas_cdi, cdi_vals, color="#e60000", linewidth=1.2, linestyle=":", label="CDI")
+        ax.plot(datas_cdi, cdi_vals, color=ACCENT, linewidth=1.2, linestyle=":", label="CDI")
     except: pass
     ax.set_title("Carteira vs Benchmarks (Base 100)", color=TXT, fontsize=10, fontweight="bold")
     ax.axhline(100, color="#333", linewidth=0.7, linestyle="-")
@@ -2308,16 +2308,16 @@ def _gerar_alertas_carteira(rows):
         if r["lucro_pct"] <= -15:
             alertas.append(("🔴", f"{r['nome']} caiu {r['lucro_pct']:.1f}% desde sua compra — avalie sua posição.", "#FF5252"))
         elif r["lucro_pct"] <= -8:
-            alertas.append(("🟡", f"{r['nome']} está {r['lucro_pct']:.1f}% abaixo do preço médio.", "#e60000"))
+            alertas.append(("🟡", f"{r['nome']} está {r['lucro_pct']:.1f}% abaixo do preço médio.", ACCENT))
         # Alta expressiva
         if r["lucro_pct"] >= 30:
-            alertas.append(("🟢", f"{r['nome']} valorizou {r['lucro_pct']:.1f}% — considere realizar parte do lucro.", "#cc0000"))
+            alertas.append(("🟢", f"{r['nome']} valorizou {r['lucro_pct']:.1f}% — considere realizar parte do lucro.", ACCENT))
         # Comparação com CDI
         try:
             cdi = _cdi_desde_compra(r["data_compra"])
             if cdi and r["lucro_pct"] < cdi:
                 diff = cdi - r["lucro_pct"]
-                alertas.append(("💛", f"{r['nome']} está {diff:.1f}% abaixo do CDI no mesmo período.", "#e60000"))
+                alertas.append(("💛", f"{r['nome']} está {diff:.1f}% abaixo do CDI no mesmo período.", ACCENT))
         except: pass
     # Concentração setorial
     setores = {}
@@ -2326,16 +2326,16 @@ def _gerar_alertas_carteira(rows):
         setores[s] = setores.get(s,[]) + [r["nome"]]
     for setor, nomes in setores.items():
         if len(nomes) >= 2:
-            alertas.append(("⚡", f"Concentração em {setor}: {', '.join(nomes)}. Considere diversificar.", "#FF9915"))
+            alertas.append(("⚡", f"Concentração em {setor}: {', '.join(nomes)}. Considere diversificar.", "#FFD600"))
     if not alertas:
-        alertas.append(("✅", "Nenhum alerta no momento. Carteira dentro dos parâmetros normais.", "#cc0000"))
+        alertas.append(("✅", "Nenhum alerta no momento. Carteira dentro dos parâmetros normais.", ACCENT))
     return alertas
 
 def _montar_alertas(rows, frame_pai):
     for w in frame_pai.winfo_children(): w.destroy()
     if not rows:
         tk.Label(frame_pai, text="Adicione ações à carteira para ver os alertas.",
-                 bg="#161616", fg="#cc0000", font=("Arial", 8, "italic"), pady=8).pack()
+                 bg="#161616", fg=ACCENT, font=("Arial", 8, "italic"), pady=8).pack()
         return
     alertas = _gerar_alertas_carteira(rows)
     for icone, texto, cor in alertas:
@@ -2369,7 +2369,7 @@ def _calcular_score_diversificacao(carteira):
 def _montar_score_div(carteira, frame_pai):
     for w in frame_pai.winfo_children(): w.destroy()
     score, msg = _calcular_score_diversificacao(carteira)
-    cor = "#cc0000" if score>=8 else "#e60000" if score>=5 else "#FF5252"
+    cor = ACCENT if score>=8 else ACCENT if score>=5 else "#FF5252"
     # Linha com barra
     row = tk.Frame(frame_pai, bg="#161616"); row.pack(fill="x", padx=10, pady=6)
     tk.Label(row, text="Score de Diversificação:", bg="#161616", fg="#aaaaaa",
@@ -2377,7 +2377,7 @@ def _montar_score_div(carteira, frame_pai):
     BAR_W = 160
     c_bar = tk.Canvas(row, width=BAR_W, height=12, bg="#161616", highlightthickness=0)
     c_bar.pack(side="left", padx=8)
-    c_bar.create_rectangle(0,0,BAR_W,12,fill="#2e2e2e",outline="")
+    c_bar.create_rectangle(0,0,BAR_W,12,fill=BTN,outline="")
     c_bar.create_rectangle(0,0,int(score/10*BAR_W),12,fill=cor,outline="")
     tk.Label(row, text=f"{score}/10", bg="#161616", fg=cor,
              font=("Arial",9,"bold")).pack(side="left", padx=4)
@@ -2411,10 +2411,10 @@ def _montar_resumo_executivo(rows, carteira, frame_pai):
     for w in frame_pai.winfo_children(): w.destroy()
     if not rows:
         tk.Label(frame_pai, text="Adicione ativos à carteira para ver o resumo executivo.",
-                 bg="#161616", fg="#cc0000", font=("Arial", 8, "italic"), pady=8).pack()
+                 bg="#161616", fg=ACCENT, font=("Arial", 8, "italic"), pady=8).pack()
         return
     texto = _gerar_resumo_executivo(rows, carteira)
-    tk.Label(frame_pai, text=texto, bg="#161616", fg="#e0e0e0",
+    tk.Label(frame_pai, text=texto, bg="#161616", fg=TXT,
              font=("Arial", 9), anchor="w", justify="left",
              wraplength=1100, padx=12, pady=10).pack(fill="x")
 
@@ -2455,7 +2455,7 @@ def _calcular_pl(carteira, precos):
         elif diff_pm < -2:
             tendencia = ("↓ Queda",   "#FF5252")
         else:
-            tendencia = ("→ Lateral", "#e60000")
+            tendencia = ("→ Lateral", ACCENT)
         rows.append({
             "ticker":     ticker,
             "nome":       nome_exibicao(ticker),
@@ -2518,7 +2518,7 @@ def _adicionar_posicao():
         msg = f"✔ {nome_exibicao(ticker)} adicionado à carteira!"
 
     _salvar_carteira(_carteira)
-    lbl_cart_status.config(text=msg, fg="#cc0000")
+    lbl_cart_status.config(text=msg, fg=ACCENT)
     _atualizar_carteira_ui()
 
 def _remover_posicao(ticker):
@@ -2597,7 +2597,7 @@ def _renderizar_secoes_vazias():
         (frame_benchmark, "Adicione ações para ver a comparação com benchmarks."),
     ]:
         for w in frame.winfo_children(): w.destroy()
-        tk.Label(frame, text=msg, bg="#161616", fg="#cc0000",
+        tk.Label(frame, text=msg, bg="#161616", fg=ACCENT,
                  font=("Arial", 8, "italic"), pady=8).pack()
     _montar_alertas([], frame_alertas)
     _montar_score_div({}, frame_score_div)
@@ -2639,7 +2639,7 @@ def _aplicar_resultados(resultado):
     else:
         for w in frame_benchmark.winfo_children(): w.destroy()
         tk.Label(frame_benchmark, text="Não foi possível carregar os benchmarks.",
-                 bg="#161616", fg="#cc0000", font=("Arial", 8, "italic"), pady=8).pack()
+                 bg="#161616", fg=ACCENT, font=("Arial", 8, "italic"), pady=8).pack()
 
     # Alertas automáticos
     _montar_alertas(rows, frame_alertas)
@@ -2651,14 +2651,14 @@ def _aplicar_resultados(resultado):
     _montar_resumo_executivo(rows, _carteira, frame_resumo)
 
     if not rows:
-        lbl_cart_status.config(text="⚠ Nenhum preço encontrado para os ativos cadastrados.", fg="#e60000")
+        lbl_cart_status.config(text="⚠ Nenhum preço encontrado para os ativos cadastrados.", fg=ACCENT)
         return
 
     # Gráfico evolução
     if dados_hist is not None and not dados_hist.empty:
         _grafico_evolucao_com_dados(dados_hist, _carteira, frame_cart_grafico)
 
-    lbl_cart_status.config(text=f"✔ Carteira atualizada — {len(rows)} ativo(s)", fg="#cc0000")
+    lbl_cart_status.config(text=f"✔ Carteira atualizada — {len(rows)} ativo(s)", fg=ACCENT)
 
 def _renderizar_carteira(precos):
     """Renderiza tabela P&L + totais + gráfico."""
@@ -2671,12 +2671,12 @@ def _renderizar_carteira(precos):
         for w in frame_cart_tabela.winfo_children(): w.destroy()
         tk.Label(frame_cart_tabela,
                  text="Nenhum ativo adicionado. Use o formulário acima para adicionar ações.",
-                 bg="#161616", fg="#cc0000", font=("Arial", 9, "italic"), pady=16).pack()
+                 bg="#161616", fg=ACCENT, font=("Arial", 9, "italic"), pady=16).pack()
         lbl_cart_status.config(text="", fg="#aaaaaa")
         return
 
     # Cabeçalho da tabela
-    CAB_BG = "#1c1c1c"
+    CAB_BG = CARD
     cols   = ["Ativo","Tend.","Qtd","P.M. (R$)","Atual (R$)","Custo (R$)","Patrim. (R$)","Lucro R$","Lucro %","CDI%","Ação"]
     widths = [7,8,4,8,8,10,10,10,8,7,4]
 
@@ -2688,7 +2688,7 @@ def _renderizar_carteira(precos):
                  font=("Arial",8,"bold"), width=w,
                  anchor="center").grid(row=0,column=c,padx=1,pady=3,sticky="ew")
 
-    tk.Frame(tbl, bg="#2e2e2e", height=1).grid(
+    tk.Frame(tbl, bg=BTN, height=1).grid(
         row=1, column=0, columnspan=len(cols), sticky="ew")
 
     total_custo = total_patrim = total_lucro = 0
@@ -2700,15 +2700,15 @@ def _renderizar_carteira(precos):
         cdi_txt = f"{cdi_ret:.2f}%" if cdi_ret else "—"
         ri      = idx + 2
 
-        tend_txt, tend_cor = r.get("tendencia", ("—", "#888888"))
+        tend_txt, tend_cor = r.get("tendencia", ("—", "#aaaaaa"))
         dados_row = [
             (nome_exibicao(r["ticker"]), CORES_ATIVOS[list(_carteira.keys()).index(r["ticker"]) % len(CORES_ATIVOS)]),
             (tend_txt,                   tend_cor),
-            (f"{r['qtd']:.0f}",          "#e0e0e0"),
-            (_fmt_num_br(r['pm']),           "#e0e0e0"),
-            (_fmt_num_br(r['preco_atual']),  "#e0e0e0"),
-            (_fmt_num_br(r['custo']),        "#e0e0e0"),
-            (_fmt_num_br(r['patrimonio']),   "#e0e0e0"),
+            (f"{r['qtd']:.0f}",          TXT),
+            (_fmt_num_br(r['pm']),           TXT),
+            (_fmt_num_br(r['preco_atual']),  TXT),
+            (_fmt_num_br(r['custo']),        TXT),
+            (_fmt_num_br(r['patrimonio']),   TXT),
             (_fmt_num_br(r['lucro_rs'], forcar_sinal=True), cor_ret),
             (f"{r['lucro_pct']:+.2f}%",  cor_ret),
             (cdi_txt,                    "#aaaaaa"),
@@ -2732,20 +2732,20 @@ def _renderizar_carteira(precos):
     total_pct = (total_lucro/total_custo*100) if total_custo>0 else 0
     cor_tot   = "#00C896" if total_lucro>=0 else "#FF5252"
     sep_r     = len(rows)+2
-    tk.Frame(tbl, bg="#2e2e2e", height=1).grid(
+    tk.Frame(tbl, bg=BTN, height=1).grid(
         row=sep_r, column=0, columnspan=len(cols), sticky="ew", pady=2)
     tot_row = sep_r+1
-    COR_VAZIO = "#1c1c1c"  # mesma cor do fundo = invisível
+    COR_VAZIO = CARD  # mesma cor do fundo = invisível
     resumo = [
-        ("TOTAL","#e60000"),("",COR_VAZIO),("",COR_VAZIO),("",COR_VAZIO),("",COR_VAZIO),
-        (_fmt_num_br(total_custo),"#e60000"),
-        (_fmt_num_br(total_patrim),"#e60000"),
+        ("TOTAL",ACCENT),("",COR_VAZIO),("",COR_VAZIO),("",COR_VAZIO),("",COR_VAZIO),
+        (_fmt_num_br(total_custo),ACCENT),
+        (_fmt_num_br(total_patrim),ACCENT),
         (_fmt_num_br(total_lucro, forcar_sinal=True),cor_tot),
         (f"{total_pct:+.2f}%",cor_tot),
         ("",COR_VAZIO),("",COR_VAZIO),
     ]
     for c,(val,fg) in enumerate(resumo):
-        tk.Label(tbl, text=val, bg="#1c1c1c", fg=fg,
+        tk.Label(tbl, text=val, bg=CARD, fg=fg,
                  font=("Arial",8,"bold"), width=widths[c],
                  anchor="center").grid(row=tot_row,column=c,padx=1,pady=3,sticky="ew")
 
@@ -2766,10 +2766,10 @@ def _renderizar_carteira(precos):
 # UI — CARD CARTEIRA PESSOAL (Etapa 5)
 # ======================================================
 CART_BG  = "#161616"
-CART_ACC = "#cc0000"
-CART_BORDER = "#e60000"
+CART_ACC = ACCENT
+CART_BORDER = ACCENT
 
-frame_cart_outer = tk.Frame(frame_conteudo, bg="#e60000")
+frame_cart_outer = tk.Frame(frame_conteudo, bg=ACCENT)
 frame_cart_outer.pack(fill="x", pady=(10, 0))
 
 frame_cart = tk.Frame(frame_cart_outer, bg=CART_BG)
@@ -2795,7 +2795,7 @@ def _mk(parent, texto):
 
 col_t = tk.Frame(frame_cart_form, bg=CART_BG); col_t.pack(side="left", padx=(0,6))
 _mk(col_t, "Ticker")
-entry_cart_ticker = tk.Entry(col_t, width=9, bg=BTN, fg="#888888",
+entry_cart_ticker = tk.Entry(col_t, width=9, bg=BTN, fg="#aaaaaa",
                               insertbackground=TXT, font=("Arial", 9), justify="center")
 entry_cart_ticker.insert(0, "ex: PETR4")
 entry_cart_ticker.bind("<FocusIn>",  lambda e: limpar_entry_placeholder(entry_cart_ticker, "ex: PETR4"))
@@ -2829,7 +2829,7 @@ tk.Button(col_b, text="＋ Adicionar", bg=CART_ACC, fg="#000000",
           font=("Arial", 9, "bold"), relief="flat", cursor="hand2",
           command=_adicionar_posicao).pack()
 
-lbl_cart_status = tk.Label(frame_cart, text="", bg=CART_BG, fg="#cc0000",
+lbl_cart_status = tk.Label(frame_cart, text="", bg=CART_BG, fg=ACCENT,
                              font=("Arial", 8), pady=2)
 lbl_cart_status.pack()
 
@@ -2839,12 +2839,12 @@ frame_cart_tabela.pack(fill="x", padx=4, pady=(0,4))
 
 
 # -- Separador visual entre ações e CDBs --
-tk.Frame(frame_cart, bg="#2e2e2e", height=2).pack(fill="x", padx=10, pady=(8,0))
+tk.Frame(frame_cart, bg=BTN, height=2).pack(fill="x", padx=10, pady=(8,0))
 
 # Cabeçalho CDB
 cab_cdb_cart = tk.Frame(frame_cart, bg="#0d0d0d")
 cab_cdb_cart.pack(fill="x")
-tk.Label(cab_cdb_cart, text="🏦  CDBs na Carteira", bg="#0d0d0d", fg="#e60000",
+tk.Label(cab_cdb_cart, text="🏦  CDBs na Carteira", bg="#0d0d0d", fg=ACCENT,
          font=("Arial", 10, "bold"), pady=5).pack(side="left", padx=12)
 
 # Formulário CDB
@@ -2857,7 +2857,7 @@ def _mk_cdb(parent, texto):
 
 cdb_c1 = tk.Frame(frame_cdb_cart_form, bg=CART_BG); cdb_c1.pack(side="left", padx=(0,6))
 _mk_cdb(cdb_c1, "Nome / Banco")
-entry_cdb_nome = tk.Entry(cdb_c1, width=14, bg=BTN, fg="#888888",
+entry_cdb_nome = tk.Entry(cdb_c1, width=14, bg=BTN, fg="#aaaaaa",
                            insertbackground=TXT, font=("Arial", 9), justify="center")
 entry_cdb_nome.insert(0, "ex: Nubank CDB")
 entry_cdb_nome.bind("<FocusIn>",  lambda e: limpar_entry_placeholder(entry_cdb_nome, "ex: Nubank CDB"))
@@ -2887,7 +2887,7 @@ entry_cdb_data.pack()
 
 cdb_c5 = tk.Frame(frame_cdb_cart_form, bg=CART_BG); cdb_c5.pack(side="left", padx=(0,6))
 _mk_cdb(cdb_c5, "Vencimento (opc.)")
-entry_cdb_venc = tk.Entry(cdb_c5, width=11, bg=BTN, fg="#888888",
+entry_cdb_venc = tk.Entry(cdb_c5, width=11, bg=BTN, fg="#aaaaaa",
                            insertbackground=TXT, font=("Arial", 9), justify="center")
 entry_cdb_venc.insert(0, "DD/MM/AAAA")
 entry_cdb_venc.bind("<FocusIn>",  lambda e: limpar_entry_placeholder(entry_cdb_venc, "DD/MM/AAAA"))
@@ -2896,11 +2896,11 @@ entry_cdb_venc.pack()
 
 cdb_c6 = tk.Frame(frame_cdb_cart_form, bg=CART_BG); cdb_c6.pack(side="left", padx=(0,6))
 _mk_cdb(cdb_c6, " ")
-tk.Button(cdb_c6, text="＋ Adicionar CDB", bg="#e60000", fg="#161616",
+tk.Button(cdb_c6, text="＋ Adicionar CDB", bg=ACCENT, fg="#161616",
           font=("Arial", 9, "bold"), relief="flat", cursor="hand2",
           command=_adicionar_cdb).pack()
 
-lbl_cdb_status = tk.Label(frame_cart, text="", bg=CART_BG, fg="#cc0000",
+lbl_cdb_status = tk.Label(frame_cart, text="", bg=CART_BG, fg=ACCENT,
                             font=("Arial", 8), pady=2)
 lbl_cdb_status.pack()
 
@@ -2913,12 +2913,12 @@ frame_cart_grafico = tk.Frame(frame_cart, bg=CART_BG)
 frame_cart_grafico.pack(fill="x", padx=4, pady=(0,4))
 
 # -- Separador visual entre carteira básica e seções avançadas --
-tk.Frame(frame_cart, bg="#2e2e2e", height=2).pack(fill="x", padx=10, pady=(8,0))
+tk.Frame(frame_cart, bg=BTN, height=2).pack(fill="x", padx=10, pady=(8,0))
 
 # ── Indicadores de Risco Avançados (Beta / Sharpe / Drawdown) ──
 cab_risco = tk.Frame(frame_cart, bg="#0d0d0d")
 cab_risco.pack(fill="x")
-tk.Label(cab_risco, text="📐  Indicadores de Risco", bg="#0d0d0d", fg="#e60000",
+tk.Label(cab_risco, text="📐  Indicadores de Risco", bg="#0d0d0d", fg=ACCENT,
          font=("Arial", 10, "bold"), pady=5).pack(side="left", padx=12)
 frame_risco = tk.Frame(frame_cart, bg=CART_BG)
 frame_risco.pack(fill="x", padx=4, pady=(4, 4))
@@ -2926,7 +2926,7 @@ frame_risco.pack(fill="x", padx=4, pady=(4, 4))
 # ── Comparativo com Benchmarks (Ibovespa / CDI) ──
 cab_benchmark = tk.Frame(frame_cart, bg="#0d0d0d")
 cab_benchmark.pack(fill="x")
-tk.Label(cab_benchmark, text="📈  Carteira vs Benchmarks", bg="#0d0d0d", fg="#e60000",
+tk.Label(cab_benchmark, text="📈  Carteira vs Benchmarks", bg="#0d0d0d", fg=ACCENT,
          font=("Arial", 10, "bold"), pady=5).pack(side="left", padx=12)
 frame_benchmark = tk.Frame(frame_cart, bg=CART_BG)
 frame_benchmark.pack(fill="x", padx=4, pady=(4, 4))
@@ -2934,7 +2934,7 @@ frame_benchmark.pack(fill="x", padx=4, pady=(4, 4))
 # ── Alertas Automáticos ──
 cab_alertas = tk.Frame(frame_cart, bg="#0d0d0d")
 cab_alertas.pack(fill="x")
-tk.Label(cab_alertas, text="🔔  Alertas", bg="#0d0d0d", fg="#e60000",
+tk.Label(cab_alertas, text="🔔  Alertas", bg="#0d0d0d", fg=ACCENT,
          font=("Arial", 10, "bold"), pady=5).pack(side="left", padx=12)
 frame_alertas = tk.Frame(frame_cart, bg=CART_BG)
 frame_alertas.pack(fill="x", padx=4, pady=(4, 4))
@@ -2942,7 +2942,7 @@ frame_alertas.pack(fill="x", padx=4, pady=(4, 4))
 # ── Score de Diversificação ──
 cab_score_div = tk.Frame(frame_cart, bg="#0d0d0d")
 cab_score_div.pack(fill="x")
-tk.Label(cab_score_div, text="🧭  Diversificação", bg="#0d0d0d", fg="#e60000",
+tk.Label(cab_score_div, text="🧭  Diversificação", bg="#0d0d0d", fg=ACCENT,
          font=("Arial", 10, "bold"), pady=5).pack(side="left", padx=12)
 frame_score_div = tk.Frame(frame_cart, bg=CART_BG)
 frame_score_div.pack(fill="x", padx=4, pady=(4, 4))
@@ -2950,7 +2950,7 @@ frame_score_div.pack(fill="x", padx=4, pady=(4, 4))
 # ── Resumo Executivo ──
 cab_resumo = tk.Frame(frame_cart, bg="#0d0d0d")
 cab_resumo.pack(fill="x")
-tk.Label(cab_resumo, text="📝  Resumo Executivo", bg="#0d0d0d", fg="#e60000",
+tk.Label(cab_resumo, text="📝  Resumo Executivo", bg="#0d0d0d", fg=ACCENT,
          font=("Arial", 10, "bold"), pady=5).pack(side="left", padx=12)
 frame_resumo = tk.Frame(frame_cart, bg=CART_BG)
 frame_resumo.pack(fill="x", padx=4, pady=(4, 10))
@@ -3174,8 +3174,8 @@ except Exception:
 # ======================================================
 # UI — ASSISTENTE DA CARTEIRA (motor de regras, sem custo)
 # ======================================================
-ASSIST_BG    = "#111111"
-ASSIST_BORDA = "#cc0000"
+ASSIST_BG    = BG
+ASSIST_BORDA = ACCENT
 
 frame_assist_outer = tk.Frame(frame_conteudo, bg=ASSIST_BORDA)
 frame_assist_outer.pack(fill="x", pady=(10, 0))
@@ -3201,8 +3201,8 @@ tk.Label(frame_assist_input, text="Sua pergunta:", bg=ASSIST_BG, fg="#aaaaaa",
 frame_assist_row = tk.Frame(frame_assist_input, bg=ASSIST_BG)
 frame_assist_row.pack(fill="x")
 
-entry_assist = tk.Entry(frame_assist_row, bg="#1c1c1c", fg="#e0e0e0",
-                    insertbackground="#e0e0e0", font=("Arial", 10),
+entry_assist = tk.Entry(frame_assist_row, bg=CARD, fg=TXT,
+                    insertbackground=TXT, font=("Arial", 10),
                     relief="flat")
 entry_assist.pack(side="left", fill="x", expand=True, ipady=6, padx=(0, 8))
 entry_assist.insert(0, "Ex: Estou batendo o CDI?")
@@ -3210,7 +3210,7 @@ entry_assist.bind("<FocusIn>",  lambda e: limpar_entry_placeholder(entry_assist,
 entry_assist.bind("<FocusOut>", lambda e: restaurar_placeholder(entry_assist, "Ex: Estou batendo o CDI?"))
 entry_assist.bind("<Return>", lambda e: _enviar_pergunta_assistente())
 
-btn_assist = tk.Button(frame_assist_row, text="✦ Perguntar", bg=ASSIST_BORDA, fg="#e0e0e0",
+btn_assist = tk.Button(frame_assist_row, text="✦ Perguntar", bg=ASSIST_BORDA, fg=TXT,
                    font=("Arial", 9, "bold"), relief="flat", cursor="hand2",
                    command=lambda: _enviar_pergunta_assistente())
 btn_assist.pack(side="left")
@@ -3230,7 +3230,7 @@ _sugestoes_assist = [
     "Meus alertas",
 ]
 for s in _sugestoes_assist:
-    tk.Button(frame_assist_sugestoes, text=s, bg="#2e2e2e", fg="#aaaaaa",
+    tk.Button(frame_assist_sugestoes, text=s, bg=BTN, fg="#aaaaaa",
               font=("Arial", 7), relief="flat", cursor="hand2",
               command=lambda txt=s: _sugestao_assistente(txt)).pack(side="left", padx=2)
 
@@ -3238,12 +3238,12 @@ for s in _sugestoes_assist:
 frame_assist_resp = tk.Frame(frame_assist, bg=ASSIST_BG)
 frame_assist_resp.pack(fill="x", padx=10, pady=(0, 10))
 
-txt_assist = tk.Text(frame_assist_resp, bg="#1c1c1c", fg="#e0e0e0",
+txt_assist = tk.Text(frame_assist_resp, bg=CARD, fg=TXT,
                  font=("Arial", 9), relief="flat", wrap="word",
                  height=6, state="disabled", padx=10, pady=8)
 txt_assist.pack(fill="x")
 
-scroll_assist = tk.Scrollbar(frame_assist_resp, command=txt_assist.yview, bg="#2e2e2e")
+scroll_assist = tk.Scrollbar(frame_assist_resp, command=txt_assist.yview, bg=BTN)
 txt_assist.config(yscrollcommand=scroll_assist.set)
 
 # Mensagem inicial
@@ -3257,7 +3257,7 @@ def _exibir_resposta_assistente(texto):
 def _sugestao_assistente(texto):
     entry_assist.delete(0, "end")
     entry_assist.insert(0, texto)
-    entry_assist.config(fg="#e0e0e0")
+    entry_assist.config(fg=TXT)
     _enviar_pergunta_assistente()
 
 def _enviar_pergunta_assistente():
