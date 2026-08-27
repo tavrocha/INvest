@@ -24,18 +24,21 @@ import sys
 # ==============================
 # CONFIGURAÇÃO DE CORES
 # ==============================
-BG      = "#111111"
-CARD    = "#1c1c1c"
-TXT     = "#e0e0e0"
-BTN     = "#2e2e2e"
-ACCENT  = "#cc0000"
-CDB_BG  = "#1c1c1c"
+# ETAPA 1/4 da reaplicação gradual: só as cores-base, sem sistema de tema,
+# sem tema.json, sem botão de alternância. Paleta: teal/dourado no lugar
+# do vermelho (https://paletadecores.com/paleta/f9d423/ede574/e1f5c4/add6bc/79b7b4/)
+BG      = "#0F1512"
+CARD    = "#171F1C"
+TXT     = "#E7ECE9"
+BTN     = "#22302B"
+ACCENT  = "#79B7B4"
+CDB_BG  = "#171F1C"
 
 CORES_ATIVOS = [
-    "#00E5FF", "#FF9100", "#FF1744", "#76FF03", "#D500F9",
-    "#FFD600", "#00BFA5", "#FF6D00", "#64DD17", "#2979FF",
-    "#FF4081", "#F50057", "#69F0AE", "#EEFF41", "#FF6E40",
-    "#40C4FF", "#B2FF59", "#EA80FC", "#FF80AB", "#CCFF90",
+    "#00E5FF", "#FFB300", "#7C4DFF", "#69F0AE", "#B388FF",
+    "#FFD600", "#00BFA5", "#40C4FF", "#8BC34A", "#2979FF",
+    "#CE93D8", "#4DD0E1", "#A5D6A7", "#FFAB40", "#80CBC4",
+    "#64B5F6", "#AED581", "#BA68C8", "#4FC3F7", "#DCE775",
 ]
 
 # ==============================
@@ -375,7 +378,7 @@ def _adicionar_ativo_manual(raw_text):
 
 def _pos_verificacao_manual(ticker, valido):
     if not valido:
-        label_status.config(text=f"❌ {nome_exibicao(ticker)} não encontrado.", fg="#FF5252")
+        label_status.config(text=f"❌ {nome_exibicao(ticker)} não encontrado.", fg="#E0785F")
         return
     var = tk.BooleanVar(value=True)
     ativos_vars[ticker] = var
@@ -604,7 +607,7 @@ def _montar_tabela(dados, selecionados, frame_pai):
             maximo    = float(serie.max())
             minimo    = float(serie.min())
             cor_ativo = CORES_ATIVOS[ativos_ordem.index(ativo) % len(CORES_ATIVOS)]
-            cor_ret   = "#00C896" if retorno >= 0 else "#FF5252"
+            cor_ret   = "#00C896" if retorno >= 0 else "#E0785F"
             row_bg    = "#161616" if idx_a % 2 == 0 else "#202020"
 
             risco_txt, cor_risco = _classificar_risco(vol)
@@ -612,7 +615,7 @@ def _montar_tabela(dados, selecionados, frame_pai):
             if len(serie) >= 2:
                 var_dia     = (serie.iloc[-1] / serie.iloc[-2] - 1) * 100
                 var_dia_txt = f"{var_dia:+.2f}%"
-                cor_var_dia = "#00C896" if var_dia >= 0 else "#FF5252"
+                cor_var_dia = "#00C896" if var_dia >= 0 else "#E0785F"
             else:
                 var_dia_txt = "—"; cor_var_dia = "#aaaaaa"
             valores = [
@@ -684,7 +687,7 @@ def _classificar_risco(vol):
     elif vol < 2.5:
         return ("Médio",  "#FFD600")   # amarelo
     else:
-        return ("Alto",   "#FF5252")   # vermelho
+        return ("Alto",   "#E0785F")   # vermelho
 
 
 # ==============================
@@ -728,7 +731,7 @@ def _tendencia_ativo(serie):
     if diff > 1.5:
         return ("↑ Alta",   ACCENT)
     elif diff < -1.5:
-        return ("↓ Queda",  "#FF5252")
+        return ("↓ Queda",  "#E0785F")
     else:
         return ("→ Lateral",ACCENT)
 
@@ -756,7 +759,7 @@ def _calcular_score(analises):
 def _cor_score(score):
     if score >= 7:   return "#00C896"   # verde
     elif score >= 4: return "#FFD600"   # amarelo
-    else:            return "#FF5252"   # vermelho
+    else:            return "#E0785F"   # vermelho
 
 # ==============================
 # 7. COMPARAÇÃO COM CDI
@@ -821,7 +824,7 @@ def exportar_pdf():
     selecionados = _cache.get("selecionados")
 
     if fig is None or dados is None:
-        btn_pdf.config(text="⚠ Gere o gráfico primeiro", fg="#FF5252")
+        btn_pdf.config(text="⚠ Gere o gráfico primeiro", fg="#E0785F")
         root.after(3000, lambda: btn_pdf.config(text="📄 Exportar PDF", fg=TXT))
         return
 
@@ -935,7 +938,7 @@ def exportar_pdf():
         btn_pdf.config(text="Instalando... tente novamente", fg=ACCENT)
         root.after(4000, lambda: btn_pdf.config(text="📄 Exportar PDF", fg=TXT))
     except Exception as e:
-        btn_pdf.config(text=f"⚠ Erro", fg="#FF5252")
+        btn_pdf.config(text=f"⚠ Erro", fg="#E0785F")
         root.after(3000, lambda: btn_pdf.config(text="📄 Exportar PDF", fg=TXT))
 
 def _gerar_insights_completo(analises, dados, selecionados, start_str, end_str):
@@ -963,7 +966,7 @@ def _gerar_insights_completo(analises, dados, selecionados, start_str, end_str):
     sinal2 = "+" if pior["retorno"] >= 0 else ""
     frases.append({"icone":"📉","titulo":"Menor retorno",
         "texto": f"{pior['nome']} teve o menor desempenho ({sinal2}{pior['retorno']:.2f}%).",
-        "cor":"#FF5252"})
+        "cor":"#E0785F"})
 
     # ⚠ Mais arriscado
     risco_txt, _ = _classificar_risco(mais_vol["vol"])
@@ -1016,7 +1019,7 @@ def _gerar_insights_completo(analises, dados, selecionados, start_str, end_str):
             ret_medio = sum(a["retorno"] for a in analises) / len(analises)
             diff = ret_medio - cdi_pct
             sinal_cdi = "acima" if diff >= 0 else "abaixo"
-            cor_cdi   = "#00C896" if diff >= 0 else "#FF5252"
+            cor_cdi   = "#00C896" if diff >= 0 else "#E0785F"
             frases.append({"icone":"🏦","titulo":"vs CDI",
                 "texto": f"Retorno médio da carteira ({ret_medio:+.2f}%) ficou {abs(diff):.2f}% {sinal_cdi} do CDI ({cdi_pct:.2f}%) no período.",
                 "cor": cor_cdi})
@@ -1197,11 +1200,11 @@ def gerar_grafico():
     if not start or not end:
         for w in frame_grafico.winfo_children(): w.destroy()
         tk.Label(frame_grafico, text="Data inválida. Use DD/MM/AAAA.",
-                 fg="#FF5252", bg=CARD).pack(pady=20); return
+                 fg="#E0785F", bg=CARD).pack(pady=20); return
     if start >= end:
         for w in frame_grafico.winfo_children(): w.destroy()
         tk.Label(frame_grafico, text="Data final deve ser maior que a inicial.",
-                 fg="#FF5252", bg=CARD).pack(pady=20); return
+                 fg="#E0785F", bg=CARD).pack(pady=20); return
 
     selecionados = [t for t in ativos_ordem if ativos_vars[t].get()]
     if not selecionados:
@@ -1232,7 +1235,7 @@ def _pos_download(dados, selecionados, estado_load, start, end):
 
     if dados is None or dados.empty:
         tk.Label(frame_grafico, text="Nenhum dado retornado.",
-                 fg="#FF5252", bg=CARD).pack(pady=20); return
+                 fg="#E0785F", bg=CARD).pack(pady=20); return
 
     _cache["dados"]        = dados
     _cache["selecionados"] = selecionados
@@ -1250,7 +1253,7 @@ MOEDAS = [
     ("GBP",  "GBPBRL=X", "£",  "#E040FB"),
     ("JPY",  "JPYBRL=X", "¥",  "#FF4081"),
     ("CHF",  "CHFBRL=X", "₣",  "#FFFFFF"),
-    ("CNY",  "CNYBRL=X", "¥",  "#FF1744"),
+    ("CNY",  "CNYBRL=X", "¥",  "#26C6DA"),
     ("AUD",  "AUDBRL=X", "A$", ACCENT),
     ("CAD",  "CADBRL=X", "C$", "#FFD600"),
     ("BRL",  None,        "R$", ACCENT),  # referência fixa
@@ -1297,7 +1300,7 @@ def _atualizar_label_moeda(sigla, preco, simbolo, cor, variacao):
     lbl_val.config(text=texto, fg=cor)
 
     sinal = "▲" if variacao >= 0 else "▼"
-    cor_var = "#00C896" if variacao >= 0 else "#FF5252"
+    cor_var = "#00C896" if variacao >= 0 else "#E0785F"
     lbl_var.config(text=f"{sinal} {abs(variacao):.2f}%", fg=cor_var)
 
 def atualizar_cotacoes():
@@ -1324,7 +1327,7 @@ def simular_cdb():
             text=f"▸  Valor final: {_fmt_brl(final)}   |   Lucro: {_fmt_brl(lucro)}",
             fg="#00C896")
     except Exception:
-        resultado_cdb.config(text="⚠  Preencha os campos com números válidos", fg="#FF5252")
+        resultado_cdb.config(text="⚠  Preencha os campos com números válidos", fg="#E0785F")
 
 # ==============================
 # CALCULADORA REVERSA CDB
@@ -1387,7 +1390,7 @@ def calcular_meta():
                 fg="#00C896")
 
     except Exception:
-        resultado_meta.config(text="⚠  Preencha os campos corretamente", fg="#FF5252")
+        resultado_meta.config(text="⚠  Preencha os campos corretamente", fg="#E0785F")
 
 def _atualizar_label_modo(*args):
     if modo_var.get() == "aporte":
@@ -1984,17 +1987,17 @@ def _adicionar_cdb():
     data_s  = entry_cdb_data.get().strip()
 
     if not nome_s or nome_s == "ex: Nubank CDB":
-        lbl_cdb_status.config(text="⚠ Digite um nome para o CDB.", fg="#FF5252"); return
+        lbl_cdb_status.config(text="⚠ Digite um nome para o CDB.", fg="#E0785F"); return
     try:
         valor = float(valor_s.replace(",", "."))
         pct   = float(pct_s.replace(",", "."))
         if valor <= 0 or pct <= 0: raise ValueError
     except ValueError:
-        lbl_cdb_status.config(text="⚠ Valor e % CDI devem ser números positivos.", fg="#FF5252"); return
+        lbl_cdb_status.config(text="⚠ Valor e % CDI devem ser números positivos.", fg="#E0785F"); return
     try:
         datetime.strptime(data_s, "%d/%m/%Y")
     except ValueError:
-        lbl_cdb_status.config(text="⚠ Data inválida. Use DD/MM/AAAA.", fg="#FF5252"); return
+        lbl_cdb_status.config(text="⚠ Data inválida. Use DD/MM/AAAA.", fg="#E0785F"); return
 
     venc_s = entry_cdb_venc.get().strip()
     venc_val = venc_s if (venc_s and venc_s != "DD/MM/AAAA") else "—"
@@ -2053,7 +2056,7 @@ def _renderizar_cdbs():
                 dv = datetime.strptime(venc, "%d/%m/%Y")
                 dias_venc = (dv - datetime.now()).days
                 if dias_venc < 0:
-                    alerta_venc = "VENCIDO"; cor_alerta = "#FF5252"
+                    alerta_venc = "VENCIDO"; cor_alerta = "#E0785F"
                 elif dias_venc <= 30:
                     alerta_venc = f"{dias_venc}d ⚠"; cor_alerta = "#FFD600"
                 elif dias_venc <= 90:
@@ -2078,7 +2081,7 @@ def _renderizar_cdbs():
                      font=("Arial", 8), width=widths[c],
                      anchor="center").grid(row=ri, column=c, padx=1, pady=2, sticky="ew")
 
-        tk.Button(tbl, text="✕", bg="#2a0000", fg="#FF5252",
+        tk.Button(tbl, text="✕", bg="#22302B", fg="#E0785F",
                   font=("Arial", 8, "bold"), relief="flat", cursor="hand2", width=2,
                   command=lambda i=idx: _remover_cdb(i)
                   ).grid(row=ri, column=10, padx=1, pady=2)
@@ -2218,7 +2221,7 @@ def _grafico_evolucao_com_dados(dados, carteira, frame_pai):
         canvas.draw(); canvas.get_tk_widget().pack(fill="both", expand=True)
     except Exception as e:
         tk.Label(frame_pai, text=f"Erro no gráfico: {e}", bg="#161616",
-                 fg="#FF5252", font=("Arial",8)).pack()
+                 fg="#E0785F", font=("Arial",8)).pack()
 
 def _renderizar_tabela_risco(indicadores, frame_pai):
     for w in frame_pai.winfo_children(): w.destroy()
@@ -2241,9 +2244,9 @@ def _renderizar_tabela_risco(indicadores, frame_pai):
         beta_s = f"{ind['beta']:.2f}"  if ind['beta']    is not None else "N/D"
         shar_s = f"{ind['sharpe']:.2f}" if ind['sharpe'] is not None else "N/D"
         dd_s   = f"{ind['drawdown']:.1f}%" if ind['drawdown'] is not None else "N/D"
-        cor_beta  = ACCENT if ind['beta'] is not None and ind['beta']<1 else "#FF5252" if ind['beta'] is not None else "#888"
-        cor_sharp = ACCENT if ind['sharpe'] is not None and ind['sharpe']>0 else "#FF5252" if ind['sharpe'] is not None else "#888"
-        cor_dd    = ACCENT if ind['drawdown'] is not None and ind['drawdown']>-15 else "#FF5252" if ind['drawdown'] is not None else "#888"
+        cor_beta  = ACCENT if ind['beta'] is not None and ind['beta']<1 else "#E0785F" if ind['beta'] is not None else "#888"
+        cor_sharp = ACCENT if ind['sharpe'] is not None and ind['sharpe']>0 else "#E0785F" if ind['sharpe'] is not None else "#888"
+        cor_dd    = ACCENT if ind['drawdown'] is not None and ind['drawdown']>-15 else "#E0785F" if ind['drawdown'] is not None else "#888"
         dados_row = [(nome_exibicao(ticker),TXT),(beta_s,cor_beta),(shar_s,cor_sharp),(dd_s,cor_dd)]
         for c,(val,fg) in enumerate(dados_row):
             tk.Label(tbl,text=val,bg=row_bg,fg=fg,
@@ -2306,7 +2309,7 @@ def _gerar_alertas_carteira(rows):
     for r in rows:
         # Queda acentuada
         if r["lucro_pct"] <= -15:
-            alertas.append(("🔴", f"{r['nome']} caiu {r['lucro_pct']:.1f}% desde sua compra — avalie sua posição.", "#FF5252"))
+            alertas.append(("🔴", f"{r['nome']} caiu {r['lucro_pct']:.1f}% desde sua compra — avalie sua posição.", "#E0785F"))
         elif r["lucro_pct"] <= -8:
             alertas.append(("🟡", f"{r['nome']} está {r['lucro_pct']:.1f}% abaixo do preço médio.", ACCENT))
         # Alta expressiva
@@ -2369,7 +2372,7 @@ def _calcular_score_diversificacao(carteira):
 def _montar_score_div(carteira, frame_pai):
     for w in frame_pai.winfo_children(): w.destroy()
     score, msg = _calcular_score_diversificacao(carteira)
-    cor = ACCENT if score>=8 else ACCENT if score>=5 else "#FF5252"
+    cor = ACCENT if score>=8 else ACCENT if score>=5 else "#E0785F"
     # Linha com barra
     row = tk.Frame(frame_pai, bg="#161616"); row.pack(fill="x", padx=10, pady=6)
     tk.Label(row, text="Score de Diversificação:", bg="#161616", fg="#aaaaaa",
@@ -2453,7 +2456,7 @@ def _calcular_pl(carteira, precos):
         if diff_pm > 2:
             tendencia = ("↑ Alta",    "#00C896")
         elif diff_pm < -2:
-            tendencia = ("↓ Queda",   "#FF5252")
+            tendencia = ("↓ Queda",   "#E0785F")
         else:
             tendencia = ("→ Lateral", ACCENT)
         rows.append({
@@ -2490,7 +2493,7 @@ def _adicionar_posicao():
     data_s = entry_cart_data.get().strip()
 
     if not raw or raw == "EX: PETR4":
-        lbl_cart_status.config(text="⚠ Digite o ticker.", fg="#FF5252"); return
+        lbl_cart_status.config(text="⚠ Digite o ticker.", fg="#E0785F"); return
     ticker = raw if raw.endswith(".SA") else raw + ".SA"
 
     try:
@@ -2498,12 +2501,12 @@ def _adicionar_posicao():
         pm  = float(pm_s.replace(",", "."))
         if qtd <= 0 or pm <= 0: raise ValueError
     except ValueError:
-        lbl_cart_status.config(text="⚠ Qtd e preço devem ser números positivos.", fg="#FF5252"); return
+        lbl_cart_status.config(text="⚠ Qtd e preço devem ser números positivos.", fg="#E0785F"); return
 
     try:
         datetime.strptime(data_s, "%d/%m/%Y")
     except ValueError:
-        lbl_cart_status.config(text="⚠ Data inválida. Use DD/MM/AAAA.", fg="#FF5252"); return
+        lbl_cart_status.config(text="⚠ Data inválida. Use DD/MM/AAAA.", fg="#E0785F"); return
 
     # Se já existe, soma a posição (preço médio ponderado)
     if ticker in _carteira:
@@ -2695,7 +2698,7 @@ def _renderizar_carteira(precos):
 
     for idx, r in enumerate(rows):
         row_bg  = "#161616" if idx%2==0 else "#202020"
-        cor_ret = "#00C896" if r["lucro_rs"] >= 0 else "#FF5252"
+        cor_ret = "#00C896" if r["lucro_rs"] >= 0 else "#E0785F"
         cdi_ret = _cdi_desde_compra(r["data_compra"])
         cdi_txt = f"{cdi_ret:.2f}%" if cdi_ret else "—"
         ri      = idx + 2
@@ -2719,7 +2722,7 @@ def _renderizar_carteira(precos):
                      anchor="center").grid(row=ri,column=c,padx=1,pady=2,sticky="ew")
 
         # Botão remover (coluna 10 = última)
-        tk.Button(tbl, text="✕", bg="#2a0000", fg="#FF5252",
+        tk.Button(tbl, text="✕", bg="#22302B", fg="#E0785F",
                   font=("Arial",8,"bold"), relief="flat", cursor="hand2", width=2,
                   command=lambda t=r["ticker"]: _remover_posicao(t)
                   ).grid(row=ri, column=10, padx=1, pady=2)
@@ -2730,7 +2733,7 @@ def _renderizar_carteira(precos):
 
     # Totais
     total_pct = (total_lucro/total_custo*100) if total_custo>0 else 0
-    cor_tot   = "#00C896" if total_lucro>=0 else "#FF5252"
+    cor_tot   = "#00C896" if total_lucro>=0 else "#E0785F"
     sep_r     = len(rows)+2
     tk.Frame(tbl, bg=BTN, height=1).grid(
         row=sep_r, column=0, columnspan=len(cols), sticky="ew", pady=2)
