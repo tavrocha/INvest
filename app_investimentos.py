@@ -22,6 +22,25 @@ import unicodedata
 import sys
 
 # ==============================
+# PREFERÊNCIA DE TEMA (etapa 3/4 da reaplicação gradual)
+# ==============================
+# Só lê o arquivo tema.json e guarda o valor em TEMA_ATUAL — ainda NÃO é
+# usado para colorir nada (isso só entra na etapa 4). Objetivo desta etapa
+# é isolar se ler/escrever esse arquivo na inicialização, por si só, causa
+# algum problema. Se o arquivo não existir, cai no default "escuro" sem erro.
+TEMA_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tema.json")
+
+def _carregar_tema_salvo():
+    try:
+        with open(TEMA_CONFIG_PATH, encoding="utf-8") as f:
+            dados = json.load(f)
+            return dados.get("tema", "escuro")
+    except Exception:
+        return "escuro"
+
+TEMA_ATUAL = _carregar_tema_salvo()
+
+# ==============================
 # CONFIGURAÇÃO DE CORES
 # ==============================
 # ETAPA 1/4 da reaplicação gradual: só as cores-base, sem sistema de tema,
@@ -1272,6 +1291,7 @@ def _buscar_cotacoes():
         try:
             hist = yf.Ticker(ticker_yf).history(period="2d")
             if hist.empty or len(hist) < 1:
+                root.after(0, lambda s=sigla: _marcar_cotacao_indisponivel(s))
                 continue
 
             preco = float(hist["Close"].iloc[-1])
@@ -1281,7 +1301,15 @@ def _buscar_cotacoes():
             root.after(0, lambda s=sigla, p=preco, sm=simbolo, c=cor, v=var:
                        _atualizar_label_moeda(s, p, sm, c, v))
         except Exception:
-            pass
+            root.after(0, lambda s=sigla: _marcar_cotacao_indisponivel(s))
+
+def _marcar_cotacao_indisponivel(sigla):
+    """Mostra que a busca falhou para essa moeda, em vez de deixar '...' preso pra sempre."""
+    if sigla not in _labels_cotacao:
+        return
+    lbl_val, lbl_var = _labels_cotacao[sigla]
+    lbl_val.config(text="indisponível", fg="#aaaaaa")
+    lbl_var.config(text="", fg="#aaaaaa")
 
 def _atualizar_label_moeda(sigla, preco, simbolo, cor, variacao):
     if sigla not in _labels_cotacao:
